@@ -9,6 +9,13 @@ import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown } from 'lucide-re
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const STATUSES = ['present','absent','late','half-day','holiday','weekend']
 
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })
+}
+function fmtTime(t) {
+  return t ? new Date(t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '—'
+}
+
 export default function Attendance() {
   const { isAdmin } = useAuth()
   const now = new Date()
@@ -38,7 +45,6 @@ export default function Attendance() {
   }
 
   useEffect(() => { load() }, [month, isAdmin])
-
   useEffect(() => {
     if (isAdmin) teacherAPI.getAll().then(r => setTeachers(r.data.teachers)).catch(()=>{})
   }, [isAdmin])
@@ -49,8 +55,7 @@ export default function Attendance() {
     try {
       await attendanceAPI.mark(form)
       toast.success('Attendance marked')
-      setModalOpen(false)
-      load()
+      setModalOpen(false); load()
     } catch (err) { toast.error(err.response?.data?.message || 'Failed') }
     finally { setSaving(false) }
   }
@@ -64,29 +69,29 @@ export default function Attendance() {
           <h1 className="page-title">{isAdmin ? 'Attendance Management' : 'My Attendance'}</h1>
           <p className="page-subtitle">{MONTHS[month-1]} {year}</p>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-          <select className="form-select" style={{ width:'auto' }} value={month} onChange={e => setMonth(+e.target.value)}>
+        <div className="page-header-actions">
+          <select className="form-select" style={{ width:'auto', minHeight:38 }} value={month} onChange={e => setMonth(+e.target.value)}>
             {MONTHS.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
           </select>
           {isAdmin && (
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-              <Plus size={15}/> Mark Attendance
+              <Plus size={15}/> Mark
             </button>
           )}
         </div>
       </div>
 
-      {/* Summary cards for teacher */}
       {!isAdmin && summary && (
-        <div className="stats-grid" style={{ gridTemplateColumns:'repeat(4,1fr)' }}>
-          <StatCard label="Present" value={summary.present} accent="green" icon={CalendarCheck} />
-          <StatCard label="Absent"  value={summary.absent}  accent="red"   icon={CalendarOff} />
-          <StatCard label="Late"    value={summary.late}    accent="amber" icon={Clock} />
-          <StatCard label="Half Day" value={summary.halfDay} accent="blue"  icon={TrendingDown} />
+        <div className="stats-grid">
+          <StatCard label="Present"  value={summary.present}  accent="green" icon={CalendarCheck} />
+          <StatCard label="Absent"   value={summary.absent}   accent="red"   icon={CalendarOff} />
+          <StatCard label="Late"     value={summary.late}     accent="amber" icon={Clock} />
+          <StatCard label="Half Day" value={summary.halfDay}  accent="blue"  icon={TrendingDown} />
         </div>
       )}
 
       <div className="card">
+        {/* DESKTOP TABLE */}
         <div className="table-wrap">
           {records.length === 0 ? <EmptyState message="No attendance records" sub="Records will appear here once marked." /> : (
             <table>
@@ -94,9 +99,7 @@ export default function Attendance() {
                 <tr>
                   <th>Date</th>
                   {isAdmin && <th>Teacher</th>}
-                  <th>Status</th>
-                  <th>Check In</th>
-                  <th>Check Out</th>
+                  <th>Status</th><th>Check In</th><th>Check Out</th>
                   {isAdmin && <th>Marked By</th>}
                   <th>Notes</th>
                 </tr>
@@ -104,24 +107,53 @@ export default function Attendance() {
               <tbody>
                 {records.map(r => (
                   <tr key={r._id}>
-                    <td style={{ fontWeight:500 }}>{new Date(r.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</td>
+                    <td style={{ fontWeight:500 }}>{fmtDate(r.date)}</td>
                     {isAdmin && (
                       <td>
-                        <div>
-                          <div style={{ fontWeight:500 }}>{r.teacher?.user?.name}</div>
-                          <div className="text-sm text-muted">{r.teacher?.teacherId}</div>
-                        </div>
+                        <div style={{ fontWeight:500 }}>{r.teacher?.user?.name}</div>
+                        <div className="text-sm text-muted">{r.teacher?.teacherId}</div>
                       </td>
                     )}
-                    <td><Badge status={r.status} /></td>
-                    <td className="text-muted">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-                    <td className="text-muted">{r.checkOut ? new Date(r.checkOut).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+                    <td><Badge status={r.status}/></td>
+                    <td className="text-muted">{fmtTime(r.checkIn)}</td>
+                    <td className="text-muted">{fmtTime(r.checkOut)}</td>
                     {isAdmin && <td className="text-muted text-sm">{r.markedBy?.name || '—'}</td>}
                     <td className="text-muted text-sm">{r.notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+
+        {/* MOBILE CARD LIST */}
+        <div className="mobile-list">
+          {records.length === 0 ? <EmptyState message="No attendance records" /> : (
+            records.map(r => (
+              <div key={r._id} className="mobile-card-item">
+                <div className="mobile-card-header">
+                  <div>
+                    {isAdmin && <div className="mobile-card-title">{r.teacher?.user?.name}</div>}
+                    <div className="mobile-card-sub">{fmtDate(r.date)}</div>
+                  </div>
+                  <Badge status={r.status}/>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Check In</span>
+                  <span className="mobile-card-value">{fmtTime(r.checkIn)}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Check Out</span>
+                  <span className="mobile-card-value">{fmtTime(r.checkOut)}</span>
+                </div>
+                {r.notes && (
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Notes</span>
+                    <span className="mobile-card-value" style={{ maxWidth:'65%', textAlign:'right' }}>{r.notes}</span>
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
       </div>

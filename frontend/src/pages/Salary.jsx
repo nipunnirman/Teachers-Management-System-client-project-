@@ -4,20 +4,20 @@ import { Modal, PageLoader, EmptyState, Badge, StatCard } from '../components/co
 import { salaryAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { Plus, DollarSign, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react'
+import { Plus, DollarSign, TrendingUp, CheckCircle } from 'lucide-react'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 export default function Salary() {
   const { isAdmin } = useAuth()
   const now = new Date()
-  const [salaries, setSalaries]     = useState([])
-  const [teachers, setTeachers]     = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [genModal, setGenModal]     = useState(false)
-  const [viewModal, setViewModal]   = useState(null)
+  const [salaries, setSalaries]       = useState([])
+  const [teachers, setTeachers]       = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [genModal, setGenModal]       = useState(false)
+  const [viewModal, setViewModal]     = useState(null)
   const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1)
-  const [filterYear]  = useState(now.getFullYear())
+  const [filterYear]                  = useState(now.getFullYear())
   const [form, setForm] = useState({ teacherId:'', month: now.getMonth()+1, year: now.getFullYear(), bonus:0, notes:'' })
   const [saving, setSaving] = useState(false)
 
@@ -43,19 +43,14 @@ export default function Salary() {
     setSaving(true)
     try {
       await salaryAPI.generate(form)
-      toast.success('Salary generated successfully')
-      setGenModal(false)
-      load()
+      toast.success('Salary generated'); setGenModal(false); load()
     } catch (err) { toast.error(err.response?.data?.message || 'Failed') }
     finally { setSaving(false) }
   }
 
   const handleMarkPaid = async (id) => {
-    try {
-      await salaryAPI.markPaid(id)
-      toast.success('Marked as paid')
-      load()
-    } catch { toast.error('Failed') }
+    try { await salaryAPI.markPaid(id); toast.success('Marked as paid'); load() }
+    catch { toast.error('Failed') }
   }
 
   const totalNet = salaries.reduce((a,s) => a + (s.netSalary||0), 0)
@@ -69,42 +64,36 @@ export default function Salary() {
           <h1 className="page-title">{isAdmin ? 'Salary & Payroll' : 'My Salary'}</h1>
           <p className="page-subtitle">{isAdmin ? `${MONTHS[filterMonth-1]} ${filterYear}` : 'Complete salary history'}</p>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-          {isAdmin && (
-            <>
-              <select className="form-select" style={{ width:'auto' }} value={filterMonth} onChange={e => setFilterMonth(+e.target.value)}>
-                {MONTHS.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
-              </select>
-              <button className="btn btn-primary" onClick={() => setGenModal(true)}>
-                <Plus size={15}/> Generate Salary
-              </button>
-            </>
-          )}
-        </div>
+        {isAdmin && (
+          <div className="page-header-actions">
+            <select className="form-select" style={{ width:'auto' }} value={filterMonth} onChange={e => setFilterMonth(+e.target.value)}>
+              {MONTHS.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
+            </select>
+            <button className="btn btn-primary" onClick={() => setGenModal(true)}>
+              <Plus size={15}/> Generate
+            </button>
+          </div>
+        )}
       </div>
 
       {isAdmin && (
-        <div className="stats-grid" style={{ gridTemplateColumns:'repeat(3,1fr)', marginBottom:24 }}>
-          <StatCard label="Total Slips" value={salaries.length} accent="gold" icon={DollarSign} />
-          <StatCard label="Total Net Payroll" value={`$${totalNet.toLocaleString()}`} accent="green" icon={TrendingUp} />
-          <StatCard label="Paid" value={salaries.filter(s=>s.status==='paid').length} accent="blue" icon={CheckCircle} />
+        <div className="stats-grid">
+          <StatCard label="Total Slips"       value={salaries.length}                            accent="gold"  icon={DollarSign}  />
+          <StatCard label="Net Payroll"        value={`$${totalNet.toLocaleString()}`}             accent="green" icon={TrendingUp}  />
+          <StatCard label="Paid"              value={salaries.filter(s=>s.status==='paid').length} accent="blue"  icon={CheckCircle} />
         </div>
       )}
 
       <div className="card">
+        {/* DESKTOP TABLE */}
         <div className="table-wrap">
-          {salaries.length === 0 ? <EmptyState message="No salary records" sub="Generate salary slips to see them here." /> : (
+          {salaries.length === 0 ? <EmptyState message="No salary records" sub="Generate salary slips to see them here."/> : (
             <table>
               <thead>
                 <tr>
                   {isAdmin && <th>Teacher</th>}
-                  <th>Period</th>
-                  <th>Base Salary</th>
-                  <th>Gross</th>
-                  <th>Deductions</th>
-                  <th>Net Salary</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>Period</th><th>Base</th><th>Gross</th>
+                  <th>Deductions</th><th>Net</th><th>Status</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,12 +109,12 @@ export default function Salary() {
                     <td>${s.baseSalary?.toLocaleString()}</td>
                     <td className="text-green">${s.grossSalary?.toLocaleString()}</td>
                     <td className="text-red">-${s.totalDeductions?.toLocaleString()}</td>
-                    <td style={{ fontWeight:700, color:'var(--text-1)' }}>${s.netSalary?.toLocaleString()}</td>
+                    <td style={{ fontWeight:700 }}>${s.netSalary?.toLocaleString()}</td>
                     <td><Badge status={s.status}/></td>
                     <td>
                       <div style={{ display:'flex', gap:6 }}>
                         <button className="btn btn-sm btn-ghost" onClick={() => setViewModal(s)}>View Slip</button>
-                        {isAdmin && s.status === 'processed' && (
+                        {isAdmin && s.status==='processed' && (
                           <button className="btn btn-sm btn-primary" onClick={() => handleMarkPaid(s._id)}>Mark Paid</button>
                         )}
                       </div>
@@ -134,6 +123,41 @@ export default function Salary() {
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+
+        {/* MOBILE CARD LIST */}
+        <div className="mobile-list">
+          {salaries.length === 0 ? <EmptyState message="No salary records"/> : (
+            salaries.map(s => (
+              <div key={s._id} className="mobile-card-item">
+                <div className="mobile-card-header">
+                  <div>
+                    {isAdmin && <div className="mobile-card-title">{s.teacher?.user?.name}</div>}
+                    <div className="mobile-card-sub">{MONTHS[s.month-1]} {s.year}</div>
+                  </div>
+                  <Badge status={s.status}/>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Gross</span>
+                  <span className="mobile-card-value text-green">${s.grossSalary?.toLocaleString()}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Deductions</span>
+                  <span className="mobile-card-value text-red">-${s.totalDeductions?.toLocaleString()}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Net Salary</span>
+                  <span className="mobile-card-value" style={{ fontWeight:700, fontSize:15 }}>${s.netSalary?.toLocaleString()}</span>
+                </div>
+                <div className="mobile-card-actions">
+                  <button className="btn btn-sm btn-ghost" onClick={() => setViewModal(s)}>View Slip</button>
+                  {isAdmin && s.status==='processed' && (
+                    <button className="btn btn-sm btn-primary" onClick={() => handleMarkPaid(s._id)}>Mark Paid</button>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -160,16 +184,16 @@ export default function Salary() {
           </div>
           <div className="form-group">
             <label className="form-label">Year</label>
-            <input className="form-input" type="number" value={form.year} onChange={e => setForm(f=>({...f,year:+e.target.value}))} />
+            <input className="form-input" type="number" value={form.year} onChange={e => setForm(f=>({...f,year:+e.target.value}))}/>
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">Bonus ($)</label>
-          <input className="form-input" type="number" min="0" value={form.bonus} onChange={e => setForm(f=>({...f,bonus:+e.target.value}))} />
+          <input className="form-input" type="number" min="0" value={form.bonus} onChange={e => setForm(f=>({...f,bonus:+e.target.value}))}/>
         </div>
         <div className="form-group">
           <label className="form-label">Notes</label>
-          <input className="form-input" placeholder="Optional note…" value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} />
+          <input className="form-input" placeholder="Optional note…" value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))}/>
         </div>
       </Modal>
 
@@ -180,12 +204,12 @@ export default function Salary() {
           <div style={{ background:'var(--bg)', borderRadius:12, padding:20 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
               <div>
-                <div className="font-display" style={{ fontSize:18 }}>EduManage</div>
+                <div className="font-display" style={{ fontSize:18 }}>Kendagolla School</div>
                 <div className="text-muted text-sm">Salary Slip</div>
               </div>
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontWeight:600 }}>{MONTHS[viewModal.month-1]} {viewModal.year}</div>
-                <Badge status={viewModal.status} />
+                <Badge status={viewModal.status}/>
               </div>
             </div>
             <div style={{ marginBottom:16, paddingBottom:14, borderBottom:'1px solid var(--border)' }}>
@@ -226,7 +250,7 @@ export default function Salary() {
                   </div>
                 ))}
                 <div style={{ display:'flex', justifyContent:'space-between', fontWeight:700, borderTop:'1px solid var(--border)', paddingTop:8, marginTop:8 }}>
-                  <span>Total Deductions</span><span className="text-red">-${viewModal.totalDeductions?.toLocaleString()}</span>
+                  <span>Total Ded.</span><span className="text-red">-${viewModal.totalDeductions?.toLocaleString()}</span>
                 </div>
               </div>
             </div>

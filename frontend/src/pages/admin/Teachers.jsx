@@ -6,21 +6,20 @@ import toast from 'react-hot-toast'
 import { Plus, Search, Edit2, Trash2, Eye, X } from 'lucide-react'
 
 const EMPLOYMENT_TYPES = ['permanent','temporary','part-time']
-
 const blankForm = {
   name:'', email:'', password:'', employmentType:'permanent',
   phone:'', department:'', subjects:'', grades:'',
 }
 
 export default function Teachers() {
-  const [teachers, setTeachers] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
+  const [teachers, setTeachers]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [viewModal, setViewModal] = useState(null)
-  const [editing, setEditing]   = useState(null)
-  const [form, setForm]         = useState(blankForm)
-  const [saving, setSaving]     = useState(false)
+  const [editing, setEditing]     = useState(null)
+  const [form, setForm]           = useState(blankForm)
+  const [saving, setSaving]       = useState(false)
 
   const load = async () => {
     try {
@@ -29,7 +28,6 @@ export default function Teachers() {
     } catch { toast.error('Failed to load teachers') }
     finally { setLoading(false) }
   }
-
   useEffect(() => { load() }, [])
 
   const filtered = teachers.filter(t =>
@@ -67,21 +65,19 @@ export default function Teachers() {
         await authAPI.register({ name: form.name, email: form.email, password: form.password, role: 'teacher' })
         toast.success('Teacher registered')
       }
-      setModalOpen(false)
-      load()
+      setModalOpen(false); load()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (t) => {
-    if (!confirm(`Remove ${t.user?.name}? This action cannot be undone.`)) return
-    try {
-      await teacherAPI.remove(t._id)
-      toast.success('Teacher removed')
-      load()
-    } catch { toast.error('Failed to remove') }
+    if (!confirm(`Remove ${t.user?.name}? This cannot be undone.`)) return
+    try { await teacherAPI.remove(t._id); toast.success('Teacher removed'); load() }
+    catch { toast.error('Failed to remove') }
   }
+
+  const initials = (name) => name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() || '?'
 
   if (loading) return <AppLayout title="Teachers"><PageLoader /></AppLayout>
 
@@ -92,33 +88,30 @@ export default function Teachers() {
           <h1 className="page-title">Teachers</h1>
           <p className="page-subtitle">{teachers.length} staff members</p>
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>
-          <Plus size={15} /> Add Teacher
-        </button>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Add Teacher</button>
+        </div>
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="search-bar">
-            <Search size={15} style={{ color:'var(--text-3)', flexShrink:0 }} />
-            <input placeholder="Search name, email, department…" value={search} onChange={e => setSearch(e.target.value)} />
+        {/* Search row */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, flexWrap:'wrap' }}>
+          <div className="search-bar" style={{ flex:1 }}>
+            <Search size={15} style={{ color:'var(--text-3)', flexShrink:0 }}/>
+            <input placeholder="Search name, email, department…" value={search} onChange={e => setSearch(e.target.value)}/>
             {search && <button onClick={() => setSearch('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', display:'flex' }}><X size={14}/></button>}
           </div>
-          <span className="text-sm text-muted">{filtered.length} results</span>
+          <span className="text-sm text-muted">{filtered.length} result{filtered.length!==1?'s':''}</span>
         </div>
 
+        {/* DESKTOP TABLE */}
         <div className="table-wrap">
-          {filtered.length === 0 ? <EmptyState message="No teachers found" /> : (
+          {filtered.length === 0 ? <EmptyState message="No teachers found"/> : (
             <table>
               <thead>
                 <tr>
-                  <th>Teacher</th>
-                  <th>ID</th>
-                  <th>Department</th>
-                  <th>Subjects</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>Teacher</th><th>ID</th><th>Department</th>
+                  <th>Subjects</th><th>Type</th><th>Status</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,9 +119,7 @@ export default function Teachers() {
                   <tr key={t._id}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div className="user-avatar" style={{ width:32, height:32, fontSize:13 }}>
-                          {t.user?.name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
-                        </div>
+                        <div className="user-avatar" style={{ width:32, height:32, fontSize:13 }}>{initials(t.user?.name)}</div>
                         <div>
                           <div style={{ fontWeight:500 }}>{t.user?.name}</div>
                           <div className="text-sm text-muted">{t.user?.email}</div>
@@ -145,8 +136,8 @@ export default function Teachers() {
                           </div>
                         : <span className="text-muted">—</span>}
                     </td>
-                    <td><Badge status={t.employmentType} /></td>
-                    <td><Badge status={t.user?.isActive ? 'active' : 'inactive'} /></td>
+                    <td><Badge status={t.employmentType}/></td>
+                    <td><Badge status={t.user?.isActive ? 'active' : 'inactive'}/></td>
                     <td>
                       <div style={{ display:'flex', gap:6 }}>
                         <button className="btn btn-icon btn-ghost" onClick={() => setViewModal(t)} title="View"><Eye size={14}/></button>
@@ -160,56 +151,99 @@ export default function Teachers() {
             </table>
           )}
         </div>
+
+        {/* MOBILE CARD LIST */}
+        <div className="mobile-list">
+          {filtered.length === 0 ? <EmptyState message="No teachers found"/> : (
+            filtered.map(t => (
+              <div key={t._id} className="mobile-card-item">
+                <div className="mobile-card-header">
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div className="user-avatar" style={{ width:38, height:38, fontSize:14 }}>{initials(t.user?.name)}</div>
+                    <div>
+                      <div className="mobile-card-title">{t.user?.name}</div>
+                      <div className="mobile-card-sub">{t.user?.email}</div>
+                    </div>
+                  </div>
+                  <Badge status={t.user?.isActive ? 'active' : 'inactive'}/>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">ID</span>
+                  <span className="mobile-card-value">{t.teacherId}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Dept.</span>
+                  <span className="mobile-card-value">{t.department || '—'}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Type</span>
+                  <span className="mobile-card-value"><Badge status={t.employmentType}/></span>
+                </div>
+                {t.subjects?.length > 0 && (
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Subjects</span>
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'flex-end' }}>
+                      {t.subjects.slice(0,2).map(s => <span key={s} className="badge badge-blue">{s}</span>)}
+                      {t.subjects.length > 2 && <span className="badge badge-gray">+{t.subjects.length-2}</span>}
+                    </div>
+                  </div>
+                )}
+                <div className="mobile-card-actions">
+                  <button className="btn btn-sm btn-ghost" onClick={() => setViewModal(t)}><Eye size={13}/> View</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => openEdit(t)}><Edit2 size={13}/> Edit</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t)}><Trash2 size={13}/> Remove</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Add / Edit Modal */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}
         title={editing ? 'Edit Teacher' : 'Add New Teacher'}
         footer={<>
           <button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : editing ? 'Save Changes' : 'Register Teacher'}
           </button>
-        </>}
-      >
+        </>}>
         {!editing && (
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Full Name *</label>
-              <input className="form-input" placeholder="Jane Doe" value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} />
+              <input className="form-input" placeholder="Jane Doe" value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))}/>
             </div>
             <div className="form-group">
               <label className="form-label">Email *</label>
-              <input className="form-input" type="email" placeholder="jane@school.edu" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
+              <input className="form-input" type="email" placeholder="jane@school.edu" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))}/>
             </div>
           </div>
         )}
         {!editing && (
           <div className="form-group">
             <label className="form-label">Password *</label>
-            <input className="form-input" type="password" placeholder="Min 8 characters" value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))} />
+            <input className="form-input" type="password" placeholder="Min 8 characters" value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))}/>
           </div>
         )}
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Department</label>
-            <input className="form-input" placeholder="Science" value={form.department} onChange={e => setForm(f=>({...f,department:e.target.value}))} />
+            <input className="form-input" placeholder="Science" value={form.department} onChange={e => setForm(f=>({...f,department:e.target.value}))}/>
           </div>
           <div className="form-group">
             <label className="form-label">Phone</label>
-            <input className="form-input" placeholder="+1 234 567 890" value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))} />
+            <input className="form-input" placeholder="+1 234 567 890" value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))}/>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Subjects (comma-separated)</label>
-            <input className="form-input" placeholder="Math, Physics" value={form.subjects} onChange={e => setForm(f=>({...f,subjects:e.target.value}))} />
+            <input className="form-input" placeholder="Math, Physics" value={form.subjects} onChange={e => setForm(f=>({...f,subjects:e.target.value}))}/>
           </div>
           <div className="form-group">
             <label className="form-label">Grades (comma-separated)</label>
-            <input className="form-input" placeholder="Grade 9, Grade 10" value={form.grades} onChange={e => setForm(f=>({...f,grades:e.target.value}))} />
+            <input className="form-input" placeholder="Grade 9, Grade 10" value={form.grades} onChange={e => setForm(f=>({...f,grades:e.target.value}))}/>
           </div>
         </div>
         <div className="form-group">
@@ -226,9 +260,7 @@ export default function Teachers() {
           footer={<button className="btn btn-ghost" onClick={() => setViewModal(null)}>Close</button>}>
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
             <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 0', borderBottom:'1px solid var(--border)' }}>
-              <div className="user-avatar" style={{ width:52, height:52, fontSize:20 }}>
-                {viewModal.user?.name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
-              </div>
+              <div className="user-avatar" style={{ width:52, height:52, fontSize:20 }}>{initials(viewModal.user?.name)}</div>
               <div>
                 <div style={{ fontWeight:600, fontSize:16 }}>{viewModal.user?.name}</div>
                 <div className="text-muted text-sm">{viewModal.user?.email}</div>
@@ -238,10 +270,10 @@ export default function Teachers() {
             {[
               ['Teacher ID', viewModal.teacherId],
               ['Department', viewModal.department || '—'],
-              ['Phone', viewModal.phone || '—'],
-              ['Subjects', viewModal.subjects?.join(', ') || '—'],
-              ['Grades',   viewModal.grades?.join(', ') || '—'],
-              ['Joined',   viewModal.joiningDate ? new Date(viewModal.joiningDate).toLocaleDateString() : '—'],
+              ['Phone',      viewModal.phone || '—'],
+              ['Subjects',   viewModal.subjects?.join(', ') || '—'],
+              ['Grades',     viewModal.grades?.join(', ') || '—'],
+              ['Joined',     viewModal.joiningDate ? new Date(viewModal.joiningDate).toLocaleDateString() : '—'],
             ].map(([k,v]) => (
               <div key={k} style={{ display:'flex', justifyContent:'space-between', fontSize:13.5 }}>
                 <span className="text-muted">{k}</span>

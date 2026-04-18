@@ -192,6 +192,25 @@ export default function Reports() {
               </tbody>
             </table>
           </div>
+          {/* MOBILE */}
+          <div className="mobile-list">
+            {workload.map((w,i) => (
+              <div key={i} className="mobile-card-item">
+                <div className="mobile-card-header">
+                  <div>
+                    <div className="mobile-card-title">{w.teacherName}</div>
+                    <div className="mobile-card-sub">{w.teacherId} · {w.department || '—'}</div>
+                  </div>
+                  <span style={{ fontFamily:'var(--font-display)', fontSize:22, color:'var(--gold)' }}>{w.totalPeriods}</span>
+                </div>
+                {w.subjects?.length > 0 && (
+                  <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                    {w.subjects.slice(0,4).map(s => <span key={s} className="badge badge-blue">{s}</span>)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </AppLayout>

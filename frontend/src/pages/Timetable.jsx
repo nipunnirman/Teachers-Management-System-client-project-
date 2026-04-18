@@ -6,44 +6,43 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Plus, Trash2 } from 'lucide-react'
 
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const PERIODS = [1,2,3,4,5,6,7,8]
-const COLORS = { Monday:'var(--gold)', Tuesday:'var(--green)', Wednesday:'var(--blue)', Thursday:'var(--amber)', Friday:'var(--red)', Saturday:'var(--text-2)' }
+const COLORS  = { Monday:'var(--gold)', Tuesday:'var(--green)', Wednesday:'var(--blue)', Thursday:'var(--amber)', Friday:'var(--red)', Saturday:'var(--text-2)' }
 
 export default function Timetable() {
   const { isAdmin } = useAuth()
-  const [entries, setEntries]   = useState([])
-  const [weekly, setWeekly]     = useState({})
-  const [teachers, setTeachers] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [academicYear, setAcademicYear] = useState('2025-2026')
+  const [entries, setEntries]               = useState([])
+  const [weekly, setWeekly]                 = useState({})
+  const [teachers, setTeachers]             = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [modalOpen, setModalOpen]           = useState(false)
+  const [academicYear, setAcademicYear]     = useState('2025-2026')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
+  const [activeDay, setActiveDay]           = useState('Monday') // for mobile tab
   const [form, setForm] = useState({ teacher:'', subject:'', grade:'', className:'', day:'Monday', period:1, startTime:'08:00', endTime:'08:45', academicYear:'2025-2026' })
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
     setLoading(true)
     try {
-      let fetchedEntries = []
+      let fetched = []
       if (isAdmin) {
         const query = { academicYear }
         if (selectedTeacherId) query.teacherId = selectedTeacherId
         const { data } = await timetableAPI.getAll(query)
-        fetchedEntries = data.entries
+        fetched = data.entries
       } else {
         const { data } = await timetableAPI.getMe({ academicYear })
-        fetchedEntries = data.entries
+        fetched = data.entries
       }
-      
-      setEntries(fetchedEntries)
-      // Build weekly grid mapping period to array of entries
+      setEntries(fetched)
       const w = {}
       DAYS.forEach(d => { w[d] = {} })
-      fetchedEntries.forEach(e => { 
+      fetched.forEach(e => {
         if (w[e.day]) {
           if (!w[e.day][e.period]) w[e.day][e.period] = []
-          w[e.day][e.period].push(e) 
+          w[e.day][e.period].push(e)
         }
       })
       setWeekly(w)
@@ -59,9 +58,7 @@ export default function Timetable() {
     setSaving(true)
     try {
       await timetableAPI.create({ ...form, academicYear })
-      toast.success('Timetable entry added')
-      setModalOpen(false)
-      load()
+      toast.success('Entry added'); setModalOpen(false); load()
     } catch (err) { toast.error(err.response?.data?.message || 'Failed — check for conflicts') }
     finally { setSaving(false) }
   }
@@ -74,6 +71,9 @@ export default function Timetable() {
 
   if (loading) return <AppLayout title="Timetable"><PageLoader /></AppLayout>
 
+  // Entries for current mobile day tab
+  const dayEntries = (weekly[activeDay] || {})
+
   return (
     <AppLayout title="Timetable">
       <div className="page-header">
@@ -81,66 +81,67 @@ export default function Timetable() {
           <h1 className="page-title">{isAdmin ? 'Timetable Management' : 'My Timetable'}</h1>
           <p className="page-subtitle">Academic Year {academicYear}</p>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+        <div className="page-header-actions">
           {isAdmin && (
-            <select className="form-select" value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)} style={{ width:180 }}>
+            <select className="form-select" style={{ width:'auto' }} value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}>
               <option value="">All Teachers</option>
               {teachers.map(t => <option key={t._id} value={t._id}>{t.user?.name}</option>)}
             </select>
           )}
-          <input className="form-input" style={{ width:140 }} placeholder="2025-2026" value={academicYear} onChange={e => setAcademicYear(e.target.value)} />
-          {isAdmin && <button className="btn btn-primary" onClick={() => { setForm(f=>({...f, teacher: selectedTeacherId})); setModalOpen(true) }}><Plus size={15}/> Add Entry</button>}
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={() => { setForm(f=>({...f, teacher: selectedTeacherId})); setModalOpen(true) }}>
+              <Plus size={15}/> Add Entry
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Weekly Grid */}
-      <div className="card" style={{ overflowX:'auto' }}>
-        <table style={{ minWidth:700 }}>
+      {/* DESKTOP: full weekly grid */}
+      <div className="card" style={{ overflowX:'auto', padding:'20px 0' }}>
+        <div style={{ display:'none' }} className="desktop-timetable">
+          {/* shown via CSS on tablet+ */}
+        </div>
+        {/* Always render the grid; CSS overflow handles it */}
+        <table style={{ minWidth:700, width:'100%' }}>
           <thead>
             <tr>
-              <th style={{ width:70 }}>Period</th>
-              {DAYS.map(d => <th key={d} style={{ color: COLORS[d] }}>{d}</th>)}
+              <th style={{ width:70, padding:'0 14px 12px' }}>Period</th>
+              {DAYS.map(d => <th key={d} style={{ color: COLORS[d], padding:'0 8px 12px' }}>{d}</th>)}
             </tr>
           </thead>
           <tbody>
             {PERIODS.map(p => (
               <tr key={p}>
-                <td style={{ fontWeight:600, color:'var(--text-3)', fontSize:12, textAlign:'center' }}>{p}</td>
+                <td style={{ fontWeight:600, color:'var(--text-3)', fontSize:12, textAlign:'center', padding:'6px 14px' }}>{p}</td>
                 {DAYS.map(d => {
                   const arr = weekly[d]?.[p] || []
                   return (
-                    <td key={d} style={{ padding:'6px 8px', verticalAlign:'top' }}>
+                    <td key={d} style={{ padding:'5px 6px', verticalAlign:'top' }}>
                       {arr.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                           {arr.map(e => (
-                            <div key={e._id} style={{ background:`${COLORS[d]}14`, border:`1px solid ${COLORS[d]}30`, borderRadius:8, padding:'8px 10px', position:'relative', minHeight:56 }}>
-                              <div style={{ fontWeight:600, fontSize:13, color: COLORS[d] }}>{e.subject}</div>
-                              <div style={{ fontSize:11.5, color:'var(--text-2)', marginTop:2 }}>{e.className}</div>
-                              {isAdmin && <div style={{ fontSize:11, color:'var(--text-3)', marginTop:1 }}>{e.teacher?.user?.name}</div>}
-                              <div style={{ fontSize:11, color:'var(--text-3)' }}>{e.startTime}–{e.endTime}</div>
+                            <div key={e._id} style={{ background:`${COLORS[d]}14`, border:`1px solid ${COLORS[d]}30`, borderRadius:8, padding:'8px 10px', position:'relative', minHeight:52 }}>
+                              <div style={{ fontWeight:600, fontSize:12, color: COLORS[d] }}>{e.subject}</div>
+                              <div style={{ fontSize:11, color:'var(--text-2)', marginTop:1 }}>{e.className}</div>
+                              {isAdmin && <div style={{ fontSize:10.5, color:'var(--text-3)' }}>{e.teacher?.user?.name}</div>}
+                              <div style={{ fontSize:10.5, color:'var(--text-3)' }}>{e.startTime}–{e.endTime}</div>
                               {isAdmin && (
-                                <button onClick={() => handleDelete(e._id)} style={{ position:'absolute', top:6, right:6, background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:2, display:'flex' }}>
-                                  <Trash2 size={12}/>
+                                <button onClick={() => handleDelete(e._id)} style={{ position:'absolute', top:5, right:5, background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:2, display:'flex' }}>
+                                  <Trash2 size={11}/>
                                 </button>
                               )}
                             </div>
                           ))}
                           {isAdmin && (
-                            <button onClick={() => { setForm(f=>({...f, day:d, period:p, teacher: selectedTeacherId})); setModalOpen(true) }}
-                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:32, cursor:'pointer', color:'var(--text-3)', fontSize:16, transition:'all 0.15s', marginTop:2 }}
-                              onMouseEnter={e => e.target.style.borderColor='var(--gold)'}
-                              onMouseLeave={e => e.target.style.borderColor='var(--border)'}
-                            >+</button>
+                            <button onClick={() => { setForm(f=>({...f,day:d,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
+                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:28, cursor:'pointer', color:'var(--text-3)', fontSize:16 }}>+</button>
                           )}
                         </div>
                       ) : (
-                        <div style={{ height:56, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <div style={{ height:48, display:'flex', alignItems:'center', justifyContent:'center' }}>
                           {isAdmin && (
-                            <button onClick={() => { setForm(f=>({...f, day:d, period:p, teacher: selectedTeacherId})); setModalOpen(true) }}
-                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:48, cursor:'pointer', color:'var(--text-3)', fontSize:18, transition:'all 0.15s' }}
-                              onMouseEnter={e => e.target.style.borderColor='var(--gold)'}
-                              onMouseLeave={e => e.target.style.borderColor='var(--border)'}
-                            >+</button>
+                            <button onClick={() => { setForm(f=>({...f,day:d,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
+                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:44, cursor:'pointer', color:'var(--text-3)', fontSize:18 }}>+</button>
                           )}
                         </div>
                       )}
@@ -151,6 +152,56 @@ export default function Timetable() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* MOBILE: Day tabs + list */}
+      <div style={{ marginTop:16 }} className="mobile-timetable-view">
+        {/* Day selector pills */}
+        <div className="filter-pills" style={{ marginBottom:14 }}>
+          {DAYS.map(d => (
+            <button key={d} onClick={() => setActiveDay(d)}
+              className={`filter-pill${activeDay===d ? ' active' : ''}`}
+              style={ activeDay===d ? { background: `${COLORS[d]}18`, color: COLORS[d], borderColor: COLORS[d] } : {} }>
+              {d.slice(0,3)}
+            </button>
+          ))}
+        </div>
+
+        {Object.keys(dayEntries).length === 0 ? (
+          <div className="card"><EmptyState message={`No classes on ${activeDay}`} /></div>
+        ) : (
+          PERIODS.map(p => {
+            const arr = dayEntries[p] || []
+            if (arr.length === 0 && !isAdmin) return null
+            return (
+              <div key={p} className="card" style={{ marginBottom:10, padding:'14px 16px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: arr.length ? 10 : 0 }}>
+                  <span style={{ background:'var(--bg)', borderRadius:6, padding:'3px 9px', fontWeight:600, fontSize:12, color:'var(--text-3)' }}>P{p}</span>
+                  {isAdmin && (
+                    <button onClick={() => { setForm(f=>({...f,day:activeDay,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
+                      className="btn btn-sm btn-ghost" style={{ marginLeft:'auto', padding:'3px 10px' }}>
+                      <Plus size={12}/> Add
+                    </button>
+                  )}
+                </div>
+                {arr.map(e => (
+                  <div key={e._id} style={{ background:`${COLORS[activeDay]}12`, border:`1px solid ${COLORS[activeDay]}28`, borderRadius:9, padding:'10px 12px', marginBottom:6, position:'relative' }}>
+                    <div style={{ fontWeight:600, color: COLORS[activeDay] }}>{e.subject}</div>
+                    <div style={{ fontSize:12.5, color:'var(--text-2)', marginTop:2 }}>{e.className} {e.grade && `· ${e.grade}`}</div>
+                    {isAdmin && <div style={{ fontSize:12, color:'var(--text-3)' }}>{e.teacher?.user?.name}</div>}
+                    <div style={{ fontSize:12, color:'var(--text-3)' }}>{e.startTime} – {e.endTime}</div>
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(e._id)}
+                        style={{ position:'absolute', top:8, right:8, background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:3 }}>
+                        <Trash2 size={13}/>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          }).filter(Boolean)
+        )}
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Timetable Entry"
@@ -170,17 +221,17 @@ export default function Timetable() {
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Subject *</label>
-            <input className="form-input" placeholder="Mathematics" value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))} />
+            <input className="form-input" placeholder="Mathematics" value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))}/>
           </div>
           <div className="form-group">
             <label className="form-label">Class *</label>
-            <input className="form-input" placeholder="Grade 10A" value={form.className} onChange={e => setForm(f=>({...f,className:e.target.value}))} />
+            <input className="form-input" placeholder="Grade 10A" value={form.className} onChange={e => setForm(f=>({...f,className:e.target.value}))}/>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Grade</label>
-            <input className="form-input" placeholder="Grade 10" value={form.grade} onChange={e => setForm(f=>({...f,grade:e.target.value}))} />
+            <input className="form-input" placeholder="Grade 10" value={form.grade} onChange={e => setForm(f=>({...f,grade:e.target.value}))}/>
           </div>
           <div className="form-group">
             <label className="form-label">Day</label>
@@ -198,12 +249,12 @@ export default function Timetable() {
           </div>
           <div className="form-group">
             <label className="form-label">Start Time</label>
-            <input className="form-input" type="time" value={form.startTime} onChange={e => setForm(f=>({...f,startTime:e.target.value}))} />
+            <input className="form-input" type="time" value={form.startTime} onChange={e => setForm(f=>({...f,startTime:e.target.value}))}/>
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">End Time</label>
-          <input className="form-input" type="time" value={form.endTime} onChange={e => setForm(f=>({...f,endTime:e.target.value}))} />
+          <input className="form-input" type="time" value={form.endTime} onChange={e => setForm(f=>({...f,endTime:e.target.value}))}/>
         </div>
       </Modal>
     </AppLayout>

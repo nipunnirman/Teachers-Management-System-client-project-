@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Spinner } from '../../components/common'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff, BookOpen } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const { login } = useAuth()
@@ -22,32 +22,31 @@ export default function Login() {
       navigate('/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   return (
     <div className="auth-page">
       <div className="auth-box">
-        <div className="auth-logo" style={{ flexDirection: 'column', gap: 12, marginBottom: 32, textAlign: 'center', justifyContent: 'center' }}>
-          <img src="/logo.jpg" alt="Kendagolla Secondary School Logo" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+        <div className="auth-logo" style={{ flexDirection:'column', gap:12, marginBottom:32, textAlign:'center', justifyContent:'center' }}>
+          <img src="/logo.jpg" alt="Kendagolla Secondary School Logo" style={{ width:80, height:80, objectFit:'contain' }} />
           <div className="auth-logo-text">
-            <h2 style={{ fontSize: '1.3rem' }}>Kendagolla Secondary School</h2>
-            <p style={{ marginTop: 2 }}>Badulla - Teacher Management System</p>
+            <h2 style={{ fontSize:'1.3rem' }}>Kendagolla Secondary School</h2>
+            <p style={{ marginTop:2 }}>Badulla · Teacher Management System</p>
           </div>
         </div>
 
         <h1 className="auth-heading">Welcome back</h1>
         <p className="auth-subheading">Sign in to your account to continue</p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="on">
           <div className="form-group">
             <label className="form-label">Email Address</label>
             <input
               className="form-input"
               type="email"
               placeholder="admin@school.edu"
+              autoComplete="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               autoFocus
@@ -56,31 +55,38 @@ export default function Login() {
 
           <div className="form-group">
             <label className="form-label">Password</label>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position:'relative' }}>
               <input
                 className="form-input"
                 type={show ? 'text' : 'password'}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                style={{ paddingRight: 40 }}
+                style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
                 onClick={() => setShow(s => !s)}
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}
+                style={{
+                  position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                  background:'none', border:'none', cursor:'pointer',
+                  color:'var(--text-3)', display:'flex', padding:4,
+                  minHeight: 'unset',
+                }}
               >
-                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                {show ? <EyeOff size={16}/> : <Eye size={16}/>}
               </button>
             </div>
           </div>
 
-          <button className="btn btn-primary w-full" type="submit" disabled={loading} style={{ marginTop: 8, justifyContent: 'center' }}>
-            {loading ? <Spinner size={16} /> : 'Sign In'}
+          <button className="btn btn-primary w-full" type="submit" disabled={loading}
+            style={{ marginTop:8, justifyContent:'center', minHeight:46 }}>
+            {loading ? <Spinner size={16}/> : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-sm text-muted" style={{ marginTop: 24, textAlign: 'center' }}>
+        <p className="text-sm text-muted" style={{ marginTop:24, textAlign:'center' }}>
           Forgot your password? Contact your administrator.
         </p>
       </div>
