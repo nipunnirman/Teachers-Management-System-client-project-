@@ -6,22 +6,22 @@ import {
 } from 'lucide-react';
 
 const adminNav = [
-  { label: 'Dashboard',   to: '/dashboard',     icon: LayoutDashboard },
-  { label: 'Teachers',    to: '/teachers',      icon: Users },
-  { label: 'Attendance',  to: '/attendance',    icon: CalendarCheck },
-  { label: 'Leave',       to: '/leave',         icon: CalendarOff },
-  { label: 'Salary',      to: '/salary',        icon: DollarSign },
-  { label: 'Timetable',   to: '/timetable',     icon: Clock },
-  { label: 'Reports',     to: '/reports',       icon: BarChart2 },
+  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Teachers', to: '/teachers', icon: Users },
+  { label: 'Attendance', to: '/attendance', icon: CalendarCheck },
+  { label: 'Leave', to: '/leave', icon: CalendarOff },
+  { label: 'Salary', to: '/salary', icon: DollarSign },
+  { label: 'Timetable', to: '/timetable', icon: Clock },
+  { label: 'Reports', to: '/reports', icon: BarChart2 },
   { label: 'Notifications', to: '/notifications', icon: Bell },
 ];
 
 const teacherNav = [
-  { label: 'Dashboard',   to: '/dashboard',     icon: LayoutDashboard },
-  { label: 'My Attendance', to: '/attendance',  icon: CalendarCheck },
-  { label: 'My Leave',    to: '/leave',         icon: CalendarOff },
-  { label: 'My Salary',   to: '/salary',        icon: DollarSign },
-  { label: 'My Timetable', to: '/timetable',    icon: Clock },
+  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'My Attendance', to: '/attendance', icon: CalendarCheck },
+  { label: 'My Leave', to: '/leave', icon: CalendarOff },
+  { label: 'My Salary', to: '/salary', icon: DollarSign },
+  { label: 'My Timetable', to: '/timetable', icon: Clock },
   { label: 'Notifications', to: '/notifications', icon: Bell },
 ];
 
