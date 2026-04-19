@@ -31,7 +31,7 @@ export default function Sidebar({ open, onClose }) {
   const nav = isAdmin ? adminNav : teacherNav;
 
   const handleLogout = () => { logout(); navigate('/login'); };
-  const initials = user?.name?.split(' ')?.map(n => n[0])?.join('')?.slice(0, 2)?.toUpperCase() || 'U';
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>

@@ -113,7 +113,17 @@ body::after {
 .nav-item.active .nav-icon { color: var(--gold); }
 .nav-icon { flex-shrink: 0; }
 
-.sidebar-footer { padding: 14px 10px; border-top: 1px solid var(--border); }
+.sidebar-footer {
+  padding: 14px 10px;
+  border-top: 1px solid var(--border);
+  /* stick to bottom of sidebar, never scroll away */
+  position: sticky;
+  bottom: 0;
+  background: rgba(233,236,239,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 1;
+}
 .user-chip {
   display: flex; align-items: center; gap: 9px;
   padding: 8px 10px; border-radius: 10px;
@@ -398,20 +408,28 @@ tr:hover td { background: rgba(255,255,255,0.08); }
 .bottom-nav {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   height: var(--bottom-nav-h);
+  /* safe-area for phones with home indicator (iPhone etc.) */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
   background: rgba(233,236,239,0.94);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border); z-index: 50;
-  padding: 0 4px;
+  padding-left: 4px; padding-right: 4px;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
 }
-.bottom-nav-inner { display: flex; align-items: stretch; height: 100%; }
+.bottom-nav-inner {
+  display: flex; align-items: stretch; height: 100%;
+  justify-content: space-around; /* evenly distribute items across full width */
+}
 .bottom-nav-item {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 3px; flex: 1;
+  min-width: 0; /* prevent overflow stretching */
   cursor: pointer; border: none; background: none;
   color: var(--text-3); font-size: 10px; font-family: var(--font-body);
-  text-decoration: none; padding: 4px 2px; border-radius: 12px;
+  text-decoration: none; padding: 4px 8px; border-radius: 12px;
   transition: all 0.15s; position: relative;
+  text-align: center; /* ensure label text centers */
 }
 .bottom-nav-item.active { color: var(--gold); }
 .bottom-nav-item.active::before {
@@ -503,6 +521,11 @@ tr:hover td { background: rgba(255,255,255,0.08); }
   }
   .sidebar.open { transform: translateX(0); }
   .sidebar-overlay.open { display: block; }
+
+  /* Push sidebar footer above bottom nav */
+  .sidebar-footer {
+    padding-bottom: calc(var(--bottom-nav-h) + 10px);
+  }
 
   /* Hamburger & bottom nav */
   .hamburger-btn { display: flex; }
