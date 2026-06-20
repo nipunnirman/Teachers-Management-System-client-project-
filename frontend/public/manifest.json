@@ -1,0 +1,18 @@
+{
+  "short_name": "TeacherPortal",
+  "name": "Kendagolla Teacher Management System",
+  "description": "Teacher dashboard and attendance scanner system.",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/dashboard",
+  "background_color": "#1e1e2e",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait"
+}
