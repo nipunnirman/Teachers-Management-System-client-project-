@@ -189,11 +189,31 @@ const scanQRAndMark = async (req, res, next) => {
     let attendance = await Attendance.findOne({ teacher: teacher._id, date: attendanceDate });
     
     if (attendance) {
-      return res.status(200).json({
-        success: true,
-        message: 'Attendance already marked for today.',
-        attendance
-      });
+      if (!attendance.checkOut) {
+        // Mark check-out
+        attendance.checkOut = today;
+        await attendance.save();
+
+        // Create a notification for the teacher
+        await Notification.create({
+          recipient: req.user.id,
+          title: 'Check-out Recorded',
+          message: `Your check-out has been recorded at ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} via QR scan.`,
+          type: 'attendance'
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'Check-out marked successfully via QR scan.',
+          attendance
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: 'You have already checked in and checked out for today.',
+          attendance
+        });
+      }
     }
 
     // Mark check-in
@@ -203,20 +223,20 @@ const scanQRAndMark = async (req, res, next) => {
       status: 'present',
       checkIn: today,
       markedBy: req.user.id,
-      notes: 'Self marked via QR code scan'
+      notes: 'Checked in via QR scan'
     });
 
     // Create a notification for the teacher
     await Notification.create({
       recipient: req.user.id,
-      title: 'Attendance Marked',
+      title: 'Check-in Recorded',
       message: `Your check-in has been recorded at ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} via QR scan.`,
       type: 'attendance'
     });
 
     res.status(200).json({
       success: true,
-      message: 'Attendance marked successfully via QR scan.',
+      message: 'Check-in marked successfully via QR scan.',
       attendance
     });
   } catch (error) {
