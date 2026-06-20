@@ -4,7 +4,9 @@ import { Modal, PageLoader, EmptyState, Badge, StatCard } from '../components/co
 import { attendanceAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown } from 'lucide-react'
+import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown, QrCode, Camera } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const STATUSES = ['present','absent','late','half-day','holiday','weekend']
@@ -28,6 +30,77 @@ export default function Attendance() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState({ teacherId:'', date: now.toISOString().slice(0,10), status:'present', notes:'' })
   const [saving, setSaving] = useState(false)
+
+  // QR Attendance State
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [qrToken, setQrToken] = useState('')
+  const [scannerOpen, setScannerOpen] = useState(false)
+
+  // Fetch admin QR token
+  const fetchQrToken = async () => {
+    try {
+      const { data } = await attendanceAPI.getTodayQRToken()
+      setQrToken(data.token)
+    } catch {
+      toast.error('Failed to get QR code')
+    }
+  }
+
+  useEffect(() => {
+    if (qrModalOpen) {
+      fetchQrToken()
+    }
+  }, [qrModalOpen])
+
+  // Camera QR scanner integration
+  useEffect(() => {
+    let html5QrCode;
+    if (scannerOpen) {
+      const timer = setTimeout(() => {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (width, height) => {
+              const size = Math.min(width, height) * 0.7;
+              return { width: size, height: size };
+            }
+          },
+          async (decodedText) => {
+            try {
+              await html5QrCode.stop();
+            } catch (e) {
+              console.error("Error stopping scanner", e);
+            }
+            setScannerOpen(false);
+            
+            toast.loading('Marking attendance...', { id: 'qr-scan' });
+            try {
+              const { data } = await attendanceAPI.scanQRToken({ token: decodedText });
+              toast.success(data.message || 'Attendance marked!', { id: 'qr-scan' });
+              load();
+            } catch (err) {
+              toast.error(err.response?.data?.message || 'Failed to mark attendance', { id: 'qr-scan' });
+            }
+          },
+          () => {}
+        ).catch(err => {
+          console.error("Failed to start scanner:", err);
+          toast.error("Failed to access camera");
+          setScannerOpen(false);
+        });
+      }, 300);
+
+      return () => {
+        clearTimeout(timer);
+        if (html5QrCode && html5QrCode.isScanning) {
+          html5QrCode.stop().catch(err => console.error("Error stopping scanner on unmount", err));
+        }
+      };
+    }
+  }, [scannerOpen]);
+
 
   const load = async () => {
     setLoading(true)
@@ -69,13 +142,22 @@ export default function Attendance() {
           <h1 className="page-title">{isAdmin ? 'Attendance Management' : 'My Attendance'}</h1>
           <p className="page-subtitle">{MONTHS[month-1]} {year}</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <select className="form-select" style={{ width:'auto', minHeight:38 }} value={month} onChange={e => setMonth(+e.target.value)}>
             {MONTHS.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
           </select>
-          {isAdmin && (
-            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-              <Plus size={15}/> Mark
+          {isAdmin ? (
+            <>
+              <button className="btn btn-outline" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setQrModalOpen(true)}>
+                <QrCode size={15}/> Daily QR
+              </button>
+              <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setModalOpen(true)}>
+                <Plus size={15}/> Mark
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setScannerOpen(true)}>
+              <Camera size={15}/> Scan QR
             </button>
           )}
         </div>
@@ -185,6 +267,36 @@ export default function Attendance() {
         <div className="form-group">
           <label className="form-label">Notes</label>
           <input className="form-input" placeholder="Optional note…" value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} />
+        </div>
+      </Modal>
+
+      {/* Admin QR Code Modal */}
+      <Modal open={qrModalOpen} onClose={() => setQrModalOpen(false)} title="Today's Attendance QR Code"
+        footer={<button className="btn btn-ghost" onClick={() => setQrModalOpen(false)}>Close</button>}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 0', gap: '16px' }}>
+          {qrToken ? (
+            <>
+              <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <QRCodeSVG value={qrToken} size={256} />
+              </div>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center', maxWidth: '300px' }}>
+                Show this QR code to teachers. They can scan it from their phones to mark themselves present.
+              </p>
+            </>
+          ) : (
+            <PageLoader />
+          )}
+        </div>
+      </Modal>
+
+      {/* Teacher QR Scanner Modal */}
+      <Modal open={scannerOpen} onClose={() => setScannerOpen(false)} title="Scan Attendance QR Code"
+        footer={<button className="btn btn-ghost" onClick={() => setScannerOpen(false)}>Cancel</button>}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div id="reader" style={{ width: '100%', maxWidth: '320px', minHeight: '240px', background: '#000', borderRadius: '8px', overflow: 'hidden' }}></div>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+            Point your camera at the screen displaying the Daily QR code.
+          </p>
         </div>
       </Modal>
     </AppLayout>

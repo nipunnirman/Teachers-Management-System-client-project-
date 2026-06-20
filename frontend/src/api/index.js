@@ -48,6 +48,8 @@ export const attendanceAPI = {
   getMe:      (params)    => api.get('/attendance/me', { params }),
   edit:       (id, data)  => api.put(`/attendance/${id}`, data),
   monthReport:(id, params)=> api.get(`/attendance/report/${id}`, { params }),
+  getTodayQRToken: ()     => api.get('/attendance/qr/today'),
+  scanQRToken: (data)     => api.post('/attendance/qr/scan', data),
 };
 
 // ── Leave ─────────────────────────────────────────

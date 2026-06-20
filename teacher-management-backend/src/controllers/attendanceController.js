@@ -140,4 +140,96 @@ const getMonthlyReport = async (req, res, next) => {
   }
 };
 
-module.exports = { markAttendance, getAttendance, getMyAttendance, editAttendance, getMonthlyReport };
+// Generate HMAC daily token based on a secret and today's date
+const crypto = require('crypto');
+const generateDailyToken = () => {
+  const secret = process.env.JWT_SECRET || 'super-secret-key-for-qr';
+  const todayStr = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+  return crypto.createHmac('sha256', secret).update(todayStr).digest('hex');
+};
+
+// @desc    Get today's QR code token
+// @route   GET /api/attendance/qr/today
+// @access  Admin
+const getTodayQRToken = async (req, res, next) => {
+  try {
+    const token = generateDailyToken();
+    res.status(200).json({ success: true, token });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Scan QR token and mark teacher attendance
+// @route   POST /api/attendance/qr/scan
+// @access  Teacher
+const scanQRAndMark = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'QR token is required.' });
+    }
+
+    const expectedToken = generateDailyToken();
+    if (token !== expectedToken) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired QR code.' });
+    }
+
+    // Find the teacher profile associated with logged in user
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher profile not found for this user.' });
+    }
+
+    const today = new Date();
+    const attendanceDate = new Date(today);
+    attendanceDate.setUTCHours(0, 0, 0, 0);
+
+    // Check if already checked in today
+    let attendance = await Attendance.findOne({ teacher: teacher._id, date: attendanceDate });
+    
+    if (attendance) {
+      return res.status(200).json({
+        success: true,
+        message: 'Attendance already marked for today.',
+        attendance
+      });
+    }
+
+    // Mark check-in
+    attendance = await Attendance.create({
+      teacher: teacher._id,
+      date: attendanceDate,
+      status: 'present',
+      checkIn: today,
+      markedBy: req.user.id,
+      notes: 'Self marked via QR code scan'
+    });
+
+    // Create a notification for the teacher
+    await Notification.create({
+      recipient: req.user.id,
+      title: 'Attendance Marked',
+      message: `Your check-in has been recorded at ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} via QR scan.`,
+      type: 'attendance'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance marked successfully via QR scan.',
+      attendance
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  markAttendance,
+  getAttendance,
+  getMyAttendance,
+  editAttendance,
+  getMonthlyReport,
+  getTodayQRToken,
+  scanQRAndMark,
+};
