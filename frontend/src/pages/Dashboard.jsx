@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import AppLayout from '../components/layout/AppLayout'
 import { StatCard, PageLoader } from '../components/common'
-import { reportAPI, attendanceAPI, leaveAPI, salaryAPI, timetableAPI } from '../api'
-import { Users, CalendarCheck, CalendarOff, DollarSign, Clock, TrendingUp } from 'lucide-react'
+import { reportAPI, attendanceAPI, leaveAPI, timetableAPI } from '../api'
+import { Users, CalendarCheck, CalendarOff, Clock, Calendar, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -31,9 +31,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isAdmin) {
-      Promise.all([reportAPI.dashboard(), reportAPI.attendance({ year })])
-        .then(([dash, att]) => {
-          setData(dash.data.dashboard)
+      Promise.all([reportAPI.dashboard(), reportAPI.attendance({ year }), timetableAPI.getAll({ academicYear: '2025-2026' })])
+        .then(([dash, att, tt]) => {
+          setData({
+            ...dash.data.dashboard,
+            timetableCount: tt.data.count || tt.data.entries?.length || 0
+          })
           // Build monthly chart data
           const monthly = {}
           att.data.monthly.forEach(({ _id, count }) => {
@@ -48,18 +51,18 @@ export default function Dashboard() {
       Promise.all([
         attendanceAPI.getMe({ month: new Date().getMonth() + 1, year }),
         leaveAPI.getAll({ status: 'pending' }),
-        salaryAPI.getMe(),
-        timetableAPI.getMe(),
+        timetableAPI.getMe({ academicYear: '2025-2026' }),
       ])
-        .then(([att, leaves, sal, tt]) => {
+        .then(([att, leaves, tt]) => {
+          const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+          const todayDayName = days[new Date().getDay()]
+          const todayClassesList = tt.data.weekly?.[todayDayName] || []
           setTeacherData({
             attendance: att.data,
             pendingLeaves: leaves.data.count,
-            latestSalary: sal.data.salaries?.[0],
-            todayClasses: Object.values(tt.data.weekly || {}).flat().filter(e => {
-              const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-              return e.day === days[new Date().getDay()]
-            }).length,
+            todayClasses: todayClassesList.length,
+            todayClassesList: todayClassesList,
+            weekClassesCount: tt.data.entries?.length || 0,
           })
         })
         .finally(() => setLoading(false))
@@ -69,7 +72,7 @@ export default function Dashboard() {
   if (loading) return <AppLayout title="Dashboard"><PageLoader /></AppLayout>
 
   if (!isAdmin && teacherData) {
-    const { attendance, pendingLeaves, latestSalary, todayClasses } = teacherData
+    const { attendance, pendingLeaves, todayClasses, todayClassesList, weekClassesCount } = teacherData
     return (
       <AppLayout title="Dashboard">
         <div className="page-header">
@@ -83,7 +86,40 @@ export default function Dashboard() {
           <StatCard label="Absent This Month"  value={attendance?.summary?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
           <StatCard label="Today's Classes"    value={todayClasses}                         accent="blue"  icon={Clock} />
           <StatCard label="Pending Leaves"     value={pendingLeaves}                        accent="amber" icon={CalendarOff} />
-          <StatCard label="Last Net Salary"    value={latestSalary ? `$${latestSalary.netSalary?.toLocaleString()}` : '—'} accent="gold" icon={DollarSign} />
+          <StatCard label="Weekly Classes"     value={weekClassesCount}                     accent="gold"  icon={Calendar} />
+        </div>
+
+        {/* Today's Schedule Overview */}
+        <div className="card" style={{ marginTop: 24 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 16 }}>
+            <div>
+              <h2 className="font-display" style={{ fontSize: 18 }}>Today's Schedule</h2>
+              <p className="text-sm text-muted">Your classes for today</p>
+            </div>
+            <Clock size={20} style={{ color: 'var(--text-3)' }} />
+          </div>
+          {todayClassesList && todayClassesList.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {todayClassesList.map(e => (
+                <div key={e._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px' }}>
+                  <div>
+                    <span style={{ background: '#3b82f618', color: '#3b82f6', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, marginRight: 8 }}>
+                      Period {e.period}
+                    </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-1)' }}>{e.subject}</span>
+                    <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{e.className} {e.grade && `· ${e.grade}`}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)' }}>
+                    {e.startTime} – {e.endTime}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-3)' }}>
+              No classes scheduled for today.
+            </div>
+          )}
         </div>
       </AppLayout>
     )
@@ -103,7 +139,7 @@ export default function Dashboard() {
         <StatCard label="Present Today"     value={data?.todayAttendance?.present ?? '—'} accent="green" icon={CalendarCheck} />
         <StatCard label="Absent Today"      value={data?.todayAttendance?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
         <StatCard label="Pending Leaves"    value={data?.pendingLeaves ?? '—'}     accent="amber" icon={CalendarOff} />
-        <StatCard label="Payroll This Month" value={data?.totalSalaryThisMonth ? `$${data.totalSalaryThisMonth.toLocaleString()}` : '—'} accent="blue" icon={DollarSign} />
+        <StatCard label="Weekly Classes"    value={data?.timetableCount ?? '—'}    accent="blue"  icon={Calendar} />
       </div>
 
       {data?.monthlyChart?.length > 0 && (

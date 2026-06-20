@@ -4,7 +4,7 @@ import { Modal, PageLoader, EmptyState, Badge, StatCard } from '../components/co
 import { attendanceAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown, QrCode, Camera } from 'lucide-react'
+import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown, QrCode, Camera, CheckCircle2 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Html5Qrcode } from 'html5-qrcode'
 
@@ -35,6 +35,8 @@ export default function Attendance() {
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [qrToken, setQrToken] = useState('')
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanSuccess, setScanSuccess] = useState(null)
+
 
   // Fetch admin QR token
   const fetchQrToken = async () => {
@@ -78,6 +80,7 @@ export default function Attendance() {
             toast.loading('Marking attendance...', { id: 'qr-scan' });
             try {
               const { data } = await attendanceAPI.scanQRToken({ token: decodedText });
+              setScanSuccess({ message: data.message || 'Successfully recorded!' });
               toast.success(data.message || 'Attendance marked!', { id: 'qr-scan' });
               load();
             } catch (err) {
@@ -156,7 +159,7 @@ export default function Attendance() {
               </button>
             </>
           ) : (
-            <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setScannerOpen(true)}>
+            <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => { setScanSuccess(null); setScannerOpen(true); }}>
               <Camera size={15}/> Scan QR
             </button>
           )}
@@ -291,12 +294,32 @@ export default function Attendance() {
 
       {/* Teacher QR Scanner Modal */}
       <Modal open={scannerOpen} onClose={() => setScannerOpen(false)} title="Scan Attendance QR Code"
-        footer={<button className="btn btn-ghost" onClick={() => setScannerOpen(false)}>Cancel</button>}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <div id="reader" style={{ width: '100%', maxWidth: '320px', minHeight: '240px', background: '#000', borderRadius: '8px', overflow: 'hidden' }}></div>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-            Point your camera at the screen displaying the Daily QR code.
-          </p>
+        footer={<button className="btn btn-ghost" onClick={() => setScannerOpen(false)}>{scanSuccess ? 'Done' : 'Cancel'}</button>}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px 0' }}>
+          {scanSuccess ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', animation: 'scaleUp 0.3s ease-out', width: '100%' }}>
+              <style dangerouslySetInnerHTML={{__html: `
+                @keyframes scaleUp {
+                  0% { transform: scale(0.6); opacity: 0; }
+                  100% { transform: scale(1); opacity: 1; }
+                }
+              `}} />
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', boxShadow: '0 0 0 8px #f0fdf4' }}>
+                <CheckCircle2 size={48} />
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#065f46', margin: 0 }}>Successfully Scanned</h3>
+              <p style={{ fontSize: '15px', color: '#047857', textAlign: 'center', margin: 0, fontWeight: '500', padding: '0 16px' }}>
+                {scanSuccess.message}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div id="reader" style={{ width: '100%', maxWidth: '320px', minHeight: '240px', background: '#000', borderRadius: '8px', overflow: 'hidden' }}></div>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+                Point your camera at the screen displaying the Daily QR code.
+              </p>
+            </>
+          )}
         </div>
       </Modal>
     </AppLayout>

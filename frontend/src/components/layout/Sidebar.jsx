@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
-  DollarSign, Clock, BarChart2, Bell, LogOut, X
+  Clock, BarChart2, Bell, LogOut, X
 } from 'lucide-react';
 
 const adminNav = [
@@ -10,7 +10,6 @@ const adminNav = [
   { label: 'Teachers',      to: '/teachers',      icon: Users },
   { label: 'Attendance',    to: '/attendance',    icon: CalendarCheck },
   { label: 'Leave',         to: '/leave',         icon: CalendarOff },
-  { label: 'Salary',        to: '/salary',        icon: DollarSign },
   { label: 'Timetable',     to: '/timetable',     icon: Clock },
   { label: 'Reports',       to: '/reports',       icon: BarChart2 },
   { label: 'Notifications', to: '/notifications', icon: Bell },
@@ -20,7 +19,6 @@ const teacherNav = [
   { label: 'Dashboard',     to: '/dashboard',     icon: LayoutDashboard },
   { label: 'My Attendance', to: '/attendance',    icon: CalendarCheck },
   { label: 'My Leave',      to: '/leave',         icon: CalendarOff },
-  { label: 'My Salary',     to: '/salary',        icon: DollarSign },
   { label: 'My Timetable',  to: '/timetable',     icon: Clock },
   { label: 'Notifications', to: '/notifications', icon: Bell },
 ];

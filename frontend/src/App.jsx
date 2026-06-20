@@ -8,7 +8,6 @@ import Dashboard    from './pages/Dashboard'
 import Teachers     from './pages/admin/Teachers'
 import Attendance   from './pages/Attendance'
 import Leave        from './pages/Leave'
-import Salary       from './pages/Salary'
 import Timetable    from './pages/Timetable'
 import Reports      from './pages/admin/Reports'
 import Notifications from './pages/Notifications'
@@ -33,7 +32,6 @@ export default function App() {
       <Route path="/teachers" element={<ProtectedRoute adminOnly><Teachers /></ProtectedRoute>} />
       <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
       <Route path="/leave" element={<ProtectedRoute><Leave /></ProtectedRoute>} />
-      <Route path="/salary" element={<ProtectedRoute><Salary /></ProtectedRoute>} />
       <Route path="/timetable" element={<ProtectedRoute><Timetable /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
