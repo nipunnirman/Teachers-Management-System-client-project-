@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/layout/AppLayout'
 import { Modal, PageLoader, EmptyState, Badge, StatCard } from '../components/common'
 import { attendanceAPI, teacherAPI } from '../api'
@@ -20,6 +21,7 @@ function fmtTime(t) {
 
 export default function Attendance() {
   const { isAdmin } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year]  = useState(now.getFullYear())
@@ -53,6 +55,15 @@ export default function Attendance() {
       fetchQrToken()
     }
   }, [qrModalOpen])
+
+  // Handle URL navigation scanner trigger (e.g. from mobile bottom nav)
+  useEffect(() => {
+    if (searchParams.get('scan') === 'true') {
+      setScanSuccess(null)
+      setScannerOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams])
 
   // Camera QR scanner integration
   useEffect(() => {

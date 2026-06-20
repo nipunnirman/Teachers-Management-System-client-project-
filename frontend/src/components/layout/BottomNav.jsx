@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, CalendarCheck, CalendarOff, Clock, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, CalendarOff, Clock, Bell, Camera } from 'lucide-react';
 
 const adminItems = [
   { label: 'Dashboard', to: '/dashboard',     icon: LayoutDashboard },
@@ -13,7 +13,7 @@ const adminItems = [
 const teacherItems = [
   { label: 'Dashboard', to: '/dashboard',     icon: LayoutDashboard },
   { label: 'Attend.',   to: '/attendance',    icon: CalendarCheck },
-  { label: 'Leave',     to: '/leave',         icon: CalendarOff },
+  { label: 'Scan QR',   to: '/attendance?scan=true', icon: Camera },
   { label: 'Timetable', to: '/timetable',     icon: Clock },
   { label: 'Alerts',    to: '/notifications', icon: Bell },
 ];
