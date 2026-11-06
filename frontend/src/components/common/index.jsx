@@ -1,18 +1,28 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Inbox } from 'lucide-react';
 
 export function Modal({ open, onClose, title, children, footer }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
+          <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
-        {children}
+        <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -27,7 +37,7 @@ export function PageLoader() {
 export function EmptyState({ message = 'No data found', sub }) {
   return (
     <div className="empty-state">
-      <Inbox size={48} />
+      <Inbox size={40} strokeWidth={1.5} />
       <h3>{message}</h3>
       {sub && <p className="text-sm">{sub}</p>}
     </div>
@@ -40,7 +50,7 @@ export function StatCard({ label, value, sub, accent = 'gold', icon: Icon }) {
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
       {sub && <div className="stat-sub">{sub}</div>}
-      {Icon && <div className="stat-icon"><Icon size={48} /></div>}
+      {Icon && <div className="stat-icon"><Icon size={16} /></div>}
     </div>
   );
 }

@@ -3,12 +3,12 @@ import AppLayout from '../components/layout/AppLayout'
 import { PageLoader, EmptyState, Modal } from '../components/common'
 import { notifAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { publishUnreadCount } from '../components/layout/useUnreadCount'
 import toast from 'react-hot-toast'
-import { CheckCheck, Trash2, Megaphone } from 'lucide-react'
+import { Bell, CalendarCheck, CalendarOff, CheckCheck, Clock, Megaphone, Trash2, Wallet } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-const TYPE_COLOR = { attendance:'var(--green)', leave:'var(--amber)', salary:'var(--gold)', timetable:'var(--blue)', announcement:'var(--red)', general:'var(--text-2)' }
-const TYPE_ICON  = { attendance:'📋', leave:'🏖️', salary:'💰', timetable:'📅', announcement:'📢', general:'🔔' }
+const TYPE_ICON = { attendance:CalendarCheck, leave:CalendarOff, salary:Wallet, timetable:Clock, announcement:Megaphone, general:Bell }
 
 export default function Notifications() {
   const { isAdmin } = useAuth()
@@ -23,7 +23,7 @@ export default function Notifications() {
     setLoading(true)
     try {
       const { data } = await notifAPI.getAll()
-      setNotifs(data.notifications); setUnread(data.unreadCount)
+      setNotifs(data.notifications); setUnread(data.unreadCount); publishUnreadCount(data.unreadCount)
     } catch { toast.error('Failed to load') }
     finally { setLoading(false) }
   }
@@ -65,46 +65,28 @@ export default function Notifications() {
 
       <div className="card" style={{ padding:0 }}>
         {notifs.length === 0 ? (
-          <div style={{ padding:24 }}>
-            <EmptyState message="No notifications yet" sub="Alerts for leave, attendance, and announcements will appear here." />
-          </div>
+          <EmptyState message="No notifications yet" sub="Alerts for leave, attendance, and announcements will appear here." />
         ) : (
-          notifs.map((n, i) => (
-            <div key={n._id}
-              onClick={() => !n.isRead && markRead(n._id)}
-              style={{
-                display:'flex', alignItems:'flex-start', gap:14,
-                padding:'15px 18px',
-                borderBottom: i < notifs.length-1 ? '1px solid var(--border)' : 'none',
-                background: n.isRead ? 'transparent' : 'rgba(171,23,36,0.03)',
-                cursor: n.isRead ? 'default' : 'pointer',
-              }}>
-              <div style={{
-                width:38, height:38, minWidth:38, borderRadius:10,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:18, background:'var(--bg)', border:'1px solid var(--border)',
-              }}>
-                {TYPE_ICON[n.type] || '🔔'}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2, flexWrap:'wrap' }}>
-                  <span style={{ fontWeight: n.isRead ? 400 : 600, fontSize:14 }}>{n.title}</span>
-                  {!n.isRead && <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--gold)', flexShrink:0 }}/>}
-                  <span style={{ fontSize:11, color:'var(--text-3)', marginLeft:'auto' }}>
+          notifs.map(n => {
+            const Icon = TYPE_ICON[n.type] || Bell
+            return (
+              <div key={n._id}
+                className={`notif-row${n.isRead ? '' : ' unread'}`}
+                onClick={() => !n.isRead && markRead(n._id)}>
+                <div className="notif-icon"><Icon size={18}/></div>
+                <div className="notif-body">
+                  <div className="notif-title">{n.title}</div>
+                  <p className="notif-message">{n.message}</p>
+                  <div className="notif-time">
                     {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                  </span>
+                  </div>
                 </div>
-                <p style={{ fontSize:13, color:'var(--text-2)', lineHeight:1.5 }}>{n.message}</p>
-                <span style={{ fontSize:11, color: TYPE_COLOR[n.type] || 'var(--text-3)', textTransform:'capitalize', marginTop:4, display:'inline-block' }}>
-                  {n.type}
-                </span>
+                <button className="notif-delete" aria-label={`Delete ${n.title}`} onClick={e => { e.stopPropagation(); remove(n._id) }}>
+                  <Trash2 size={16}/>
+                </button>
               </div>
-              <button onClick={e => { e.stopPropagation(); remove(n._id) }}
-                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:4, borderRadius:6, display:'flex', flexShrink:0 }}>
-                <Trash2 size={14}/>
-              </button>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 

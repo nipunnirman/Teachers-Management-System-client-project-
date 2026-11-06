@@ -8,7 +8,11 @@ import { Plus, Trash2 } from 'lucide-react'
 
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const PERIODS = [1,2,3,4,5,6,7,8]
-const COLORS  = { Monday:'var(--gold)', Tuesday:'var(--green)', Wednesday:'var(--blue)', Thursday:'var(--amber)', Friday:'var(--red)', Saturday:'var(--text-2)' }
+const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const todayOrMonday = () => {
+  const today = WEEKDAYS[new Date().getDay()]
+  return DAYS.includes(today) ? today : 'Monday'
+}
 
 export default function Timetable() {
   const { isAdmin } = useAuth()
@@ -19,7 +23,7 @@ export default function Timetable() {
   const [modalOpen, setModalOpen]           = useState(false)
   const [academicYear, setAcademicYear]     = useState('2025-2026')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [activeDay, setActiveDay]           = useState('Monday') // for mobile tab
+  const [activeDay, setActiveDay]           = useState(todayOrMonday) // for mobile tab
   const [form, setForm] = useState({ teacher:'', subject:'', grade:'', className:'', day:'Monday', period:1, startTime:'08:00', endTime:'08:45', academicYear:'2025-2026' })
   const [saving, setSaving] = useState(false)
 
@@ -71,8 +75,12 @@ export default function Timetable() {
 
   if (loading) return <AppLayout title="Timetable"><PageLoader /></AppLayout>
 
-  // Entries for current mobile day tab
-  const dayEntries = (weekly[activeDay] || {})
+  // Classes for the current mobile day tab, in period order
+  const dayClasses = PERIODS.flatMap(p => weekly[activeDay]?.[p] || [])
+  const openAddFor = (day, period) => {
+    setForm(f => ({ ...f, day, period, teacher: selectedTeacherId }))
+    setModalOpen(true)
+  }
 
   return (
     <AppLayout title="Timetable">
@@ -83,13 +91,13 @@ export default function Timetable() {
         </div>
         <div className="page-header-actions">
           {isAdmin && (
-            <select className="form-select" style={{ width:'auto' }} value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}>
+            <select className="form-select" aria-label="Filter by teacher" value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}>
               <option value="">All Teachers</option>
               {teachers.map(t => <option key={t._id} value={t._id}>{t.user?.name}</option>)}
             </select>
           )}
           {isAdmin && (
-            <button className="btn btn-primary" onClick={() => { setForm(f=>({...f, teacher: selectedTeacherId})); setModalOpen(true) }}>
+            <button className="btn btn-primary" onClick={() => openAddFor(activeDay, form.period)}>
               <Plus size={15}/> Add Entry
             </button>
           )}
@@ -97,111 +105,90 @@ export default function Timetable() {
       </div>
 
       {/* DESKTOP: full weekly grid */}
-      <div className="card" style={{ overflowX:'auto', padding:'20px 0' }}>
-        <div style={{ display:'none' }} className="desktop-timetable">
-          {/* shown via CSS on tablet+ */}
-        </div>
-        {/* Always render the grid; CSS overflow handles it */}
-        <table style={{ minWidth:700, width:'100%' }}>
-          <thead>
-            <tr>
-              <th style={{ width:70, padding:'0 14px 12px' }}>Period</th>
-              {DAYS.map(d => <th key={d} style={{ color: COLORS[d], padding:'0 8px 12px' }}>{d}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {PERIODS.map(p => (
-              <tr key={p}>
-                <td style={{ fontWeight:600, color:'var(--text-3)', fontSize:12, textAlign:'center', padding:'6px 14px' }}>{p}</td>
-                {DAYS.map(d => {
-                  const arr = weekly[d]?.[p] || []
-                  return (
-                    <td key={d} style={{ padding:'5px 6px', verticalAlign:'top' }}>
-                      {arr.length > 0 ? (
-                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                          {arr.map(e => (
-                            <div key={e._id} style={{ background:`${COLORS[d]}14`, border:`1px solid ${COLORS[d]}30`, borderRadius:8, padding:'8px 10px', position:'relative', minHeight:52 }}>
-                              <div style={{ fontWeight:600, fontSize:12, color: COLORS[d] }}>{e.subject}</div>
-                              <div style={{ fontSize:11, color:'var(--text-2)', marginTop:1 }}>{e.className}</div>
-                              {isAdmin && <div style={{ fontSize:10.5, color:'var(--text-3)' }}>{e.teacher?.user?.name}</div>}
-                              <div style={{ fontSize:10.5, color:'var(--text-3)' }}>{e.startTime}–{e.endTime}</div>
-                              {isAdmin && (
-                                <button onClick={() => handleDelete(e._id)} style={{ position:'absolute', top:5, right:5, background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:2, display:'flex' }}>
-                                  <Trash2 size={11}/>
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                          {isAdmin && (
-                            <button onClick={() => { setForm(f=>({...f,day:d,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
-                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:28, cursor:'pointer', color:'var(--text-3)', fontSize:16 }}>+</button>
-                          )}
-                        </div>
-                      ) : (
-                        <div style={{ height:48, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                          {isAdmin && (
-                            <button onClick={() => { setForm(f=>({...f,day:d,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
-                              style={{ background:'none', border:'1px dashed var(--border)', borderRadius:8, width:'100%', height:44, cursor:'pointer', color:'var(--text-3)', fontSize:18 }}>+</button>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  )
-                })}
+      <div className="card timetable-desktop">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th className="tt-period">Period</th>
+                {DAYS.map(d => <th key={d}>{d}</th>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {PERIODS.map(p => (
+                <tr key={p}>
+                  <td className="tt-period">{p}</td>
+                  {DAYS.map(d => {
+                    const arr = weekly[d]?.[p] || []
+                    return (
+                      <td key={d}>
+                        {arr.length > 0 ? (
+                          <div className="tt-stack">
+                            {arr.map(e => (
+                              <div key={e._id} className="tt-entry">
+                                <div className="tt-subject">{e.subject}</div>
+                                <div className="tt-meta">{e.className}</div>
+                                {isAdmin && <div className="tt-meta">{e.teacher?.user?.name}</div>}
+                                <div className="tt-meta">{e.startTime}–{e.endTime}</div>
+                                {isAdmin && (
+                                  <button className="tt-delete" onClick={() => handleDelete(e._id)} aria-label={`Remove ${e.subject}`}>
+                                    <Trash2 size={13}/>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            {isAdmin && (
+                              <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={`Add class on ${d}, period ${p}`}><Plus size={14}/></button>
+                            )}
+                          </div>
+                        ) : isAdmin && (
+                          <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={`Add class on ${d}, period ${p}`}><Plus size={15}/></button>
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* MOBILE: Day tabs + list */}
-      <div style={{ marginTop:16 }} className="mobile-timetable-view">
-        {/* Day selector pills */}
-        <div className="filter-pills" style={{ marginBottom:14 }}>
+      {/* MOBILE: day tabs + list */}
+      <div className="mobile-timetable-view">
+        <div className="filter-pills">
           {DAYS.map(d => (
             <button key={d} onClick={() => setActiveDay(d)}
-              className={`filter-pill${activeDay===d ? ' active' : ''}`}
-              style={ activeDay===d ? { background: `${COLORS[d]}18`, color: COLORS[d], borderColor: COLORS[d] } : {} }>
+              className={`filter-pill${activeDay===d ? ' active' : ''}`}>
               {d.slice(0,3)}
             </button>
           ))}
         </div>
 
-        {Object.keys(dayEntries).length === 0 ? (
-          <div className="card"><EmptyState message={`No classes on ${activeDay}`} /></div>
-        ) : (
-          PERIODS.map(p => {
-            const arr = dayEntries[p] || []
-            if (arr.length === 0 && !isAdmin) return null
-            return (
-              <div key={p} className="card" style={{ marginBottom:10, padding:'14px 16px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: arr.length ? 10 : 0 }}>
-                  <span style={{ background:'var(--bg)', borderRadius:6, padding:'3px 9px', fontWeight:600, fontSize:12, color:'var(--text-3)' }}>P{p}</span>
+        <div className="card">
+          {dayClasses.length === 0 ? (
+            <EmptyState message={`No classes on ${activeDay}`} />
+          ) : (
+            <div className="schedule-list">
+              {dayClasses.map(e => (
+                <div key={e._id} className="schedule-row">
+                  <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
+                  <div className="schedule-main">
+                    <div className="schedule-subject">{e.subject}</div>
+                    <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
+                    {isAdmin && <div className="schedule-meta">{e.teacher?.user?.name}</div>}
+                    <div className="schedule-meta">{e.startTime} – {e.endTime}</div>
+                  </div>
                   {isAdmin && (
-                    <button onClick={() => { setForm(f=>({...f,day:activeDay,period:p,teacher:selectedTeacherId})); setModalOpen(true) }}
-                      className="btn btn-sm btn-ghost" style={{ marginLeft:'auto', padding:'3px 10px' }}>
-                      <Plus size={12}/> Add
+                    <button className="notif-delete" onClick={() => handleDelete(e._id)} aria-label={`Remove ${e.subject}`}>
+                      <Trash2 size={16}/>
                     </button>
                   )}
                 </div>
-                {arr.map(e => (
-                  <div key={e._id} style={{ background:`${COLORS[activeDay]}12`, border:`1px solid ${COLORS[activeDay]}28`, borderRadius:9, padding:'10px 12px', marginBottom:6, position:'relative' }}>
-                    <div style={{ fontWeight:600, color: COLORS[activeDay] }}>{e.subject}</div>
-                    <div style={{ fontSize:12.5, color:'var(--text-2)', marginTop:2 }}>{e.className} {e.grade && `· ${e.grade}`}</div>
-                    {isAdmin && <div style={{ fontSize:12, color:'var(--text-3)' }}>{e.teacher?.user?.name}</div>}
-                    <div style={{ fontSize:12, color:'var(--text-3)' }}>{e.startTime} – {e.endTime}</div>
-                    {isAdmin && (
-                      <button onClick={() => handleDelete(e._id)}
-                        style={{ position:'absolute', top:8, right:8, background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', padding:3 }}>
-                        <Trash2 size={13}/>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )
-          }).filter(Boolean)
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Timetable Entry"

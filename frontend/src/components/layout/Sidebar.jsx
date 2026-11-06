@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
-  Clock, BarChart2, Bell, LogOut, X
+  Clock, BarChart2, Bell, LogOut
 } from 'lucide-react';
 
 const adminNav = [
@@ -23,7 +23,7 @@ const teacherNav = [
   { label: 'Notifications', to: '/notifications', icon: Bell },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ unread = 0 }) {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const nav = isAdmin ? adminNav : teacherNav;
@@ -32,38 +32,21 @@ export default function Sidebar({ open, onClose }) {
   const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   return (
-    <aside className={`sidebar${open ? ' open' : ''}`}>
-      {/* Close button — only visible on mobile */}
-      <div className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-        <button
-          onClick={onClose}
-          aria-label="Close menu"
-          style={{
-            position: 'absolute', top: 12, right: 12,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-3)', padding: 4, borderRadius: 6,
-            display: 'flex', alignItems: 'center',
-          }}
-          className="hamburger-btn"
-        >
-          <X size={18} />
-        </button>
-        <h1 style={{ fontSize: '1.1rem', textAlign: 'center', lineHeight: '1.2', margin: 0 }}>
-          Teachers Management System
-        </h1>
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <h1>Teachers Management System</h1>
       </div>
 
       <nav className="nav-section">
-        <span className="nav-label">Navigation</span>
         {nav.map(({ label, to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
-            onClick={onClose}
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
-            <Icon className="nav-icon" size={16} />
+            <Icon className="nav-icon" size={18} />
             {label}
+            {to === '/notifications' && unread > 0 && <span className="nav-count">{unread > 99 ? '99+' : unread}</span>}
           </NavLink>
         ))}
       </nav>
@@ -75,8 +58,8 @@ export default function Sidebar({ open, onClose }) {
             <div className="user-chip-name">{user?.name}</div>
             <div className="user-chip-role">{user?.role}</div>
           </div>
-          <button className="logout-btn" onClick={handleLogout} title="Logout">
-            <LogOut size={15} />
+          <button className="logout-btn" onClick={handleLogout} title="Sign out" aria-label="Sign out">
+            <LogOut size={17} />
           </button>
         </div>
       </div>

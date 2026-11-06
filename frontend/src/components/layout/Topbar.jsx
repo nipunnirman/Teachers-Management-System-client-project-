@@ -1,17 +1,18 @@
-import { Bell, Menu } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Topbar({ title, onMenuClick }) {
+export default function Topbar({ unread = 0 }) {
   const navigate = useNavigate();
   return (
     <header className="topbar">
-      <button className="hamburger-btn" onClick={onMenuClick} aria-label="Open menu">
-        <Menu size={22} />
-      </button>
-      <span className="topbar-title">{title}</span>
-      <button className="notif-btn" onClick={() => navigate('/notifications')} title="Notifications">
-        <Bell size={18} />
-        <span className="notif-dot" />
+      <span className="topbar-title">Teachers Management System</span>
+      <button
+        className="notif-btn"
+        onClick={() => navigate('/notifications')}
+        aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+      >
+        <Bell size={21} />
+        {unread > 0 && <span className="notif-dot" />}
       </button>
     </header>
   );

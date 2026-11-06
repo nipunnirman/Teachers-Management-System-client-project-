@@ -160,7 +160,7 @@ export default function Leave() {
                 </div>
                 <div className="mobile-card-row">
                   <span className="mobile-card-label">Reason</span>
-                  <span className="mobile-card-value" style={{ maxWidth:'60%', textAlign:'right', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.reason}</span>
+                  <span className="mobile-card-value" style={{ overflowWrap:'anywhere' }}>{l.reason}</span>
                 </div>
                 {(isAdmin && l.status==='pending') || (!isAdmin && l.status==='pending') ? (
                   <div className="mobile-card-actions">
@@ -222,9 +222,9 @@ export default function Leave() {
               ['Days',    reviewModal.totalDays],
               ['Reason',  reviewModal.reason],
             ].map(([k,v]) => (
-              <div key={k} style={{ display:'flex', justifyContent:'space-between', fontSize:13.5, gap:16 }}>
+              <div key={k} className="detail-row">
                 <span className="text-muted">{k}</span>
-                <span style={{ fontWeight:500, textAlign:'right', textTransform:'capitalize' }}>{v}</span>
+                <span style={{ textTransform: k === 'Type' ? 'capitalize' : 'none' }}>{v}</span>
               </div>
             ))}
           </div>

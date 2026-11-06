@@ -12,17 +12,20 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <App />
         <Toaster
-          position="top-right"
+          position="top-center"
+          containerStyle={{ top: 'calc(12px + env(safe-area-inset-top, 0px))' }}
           toastOptions={{
             style: {
-              background: '#15161c',
-              color: '#f0ede6',
-              border: '1px solid #2a2b36',
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: '13.5px',
+              background: '#18203a',
+              color: '#ffffff',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 500,
             },
-            success: { iconTheme: { primary: '#4caf7d', secondary: '#15161c' } },
-            error:   { iconTheme: { primary: '#e05c5c', secondary: '#15161c' } },
+            success: { iconTheme: { primary: '#5fd0a1', secondary: '#18203a' } },
+            error:   { iconTheme: { primary: '#f08a86', secondary: '#18203a' } },
           }}
         />
       </AuthProvider>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Spinner } from '../../components/common'
@@ -11,6 +11,8 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => { document.title = 'Teachers Management System' }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,66 +29,57 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-box">
-        <div className="auth-logo" style={{ flexDirection:'column', gap:12, marginBottom:32, textAlign:'center', justifyContent:'center' }}>
-          <div className="auth-logo-text">
-            <h2 style={{ fontSize:'1.3rem' }}>Teachers Management System</h2>
-          </div>
-        </div>
+      <div className="auth-brand">Teachers Management System</div>
 
+      <div className="auth-box">
         <h1 className="auth-heading">Welcome back</h1>
         <p className="auth-subheading">Sign in to your account to continue</p>
 
         <form onSubmit={handleSubmit} autoComplete="on">
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label" htmlFor="login-email">Email address</label>
             <input
+              id="login-email"
               className="form-input"
               type="email"
-              placeholder="admin@school.edu"
+              inputMode="email"
+              autoCapitalize="none"
+              placeholder="you@example.com"
               autoComplete="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              autoFocus
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
-            <div style={{ position:'relative' }}>
+            <label className="form-label" htmlFor="login-password">Password</label>
+            <div className="input-with-action">
               <input
+                id="login-password"
                 className="form-input"
                 type={show ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Your password"
                 autoComplete="current-password"
                 value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                style={{ paddingRight: 44 }}
               />
               <button
                 type="button"
+                className="input-action"
                 onClick={() => setShow(s => !s)}
-                style={{
-                  position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
-                  background:'none', border:'none', cursor:'pointer',
-                  color:'var(--text-3)', display:'flex', padding:4,
-                  minHeight: 'unset',
-                }}
+                aria-label={show ? 'Hide password' : 'Show password'}
               >
-                {show ? <EyeOff size={16}/> : <Eye size={16}/>}
+                {show ? <EyeOff size={18}/> : <Eye size={18}/>}
               </button>
             </div>
           </div>
 
-          <button className="btn btn-primary w-full" type="submit" disabled={loading}
-            style={{ marginTop:8, justifyContent:'center', minHeight:46 }}>
-            {loading ? <Spinner size={16}/> : 'Sign In'}
+          <button className="btn btn-primary btn-block" type="submit" disabled={loading} style={{ marginTop:8 }}>
+            {loading ? <Spinner size={16}/> : 'Sign in'}
           </button>
         </form>
 
-        <p className="text-sm text-muted" style={{ marginTop:24, textAlign:'center' }}>
-          Forgot your password? Contact your administrator.
-        </p>
+        <p className="auth-note">Forgot your password? Contact your administrator.</p>
       </div>
     </div>
   )

@@ -95,14 +95,13 @@ export default function Teachers() {
 
       <div className="card">
         {/* Search row */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, flexWrap:'wrap' }}>
-          <div className="search-bar" style={{ flex:1 }}>
-            <Search size={15} style={{ color:'var(--text-3)', flexShrink:0 }}/>
+        <div className="toolbar">
+          <div className="search-bar">
+            <Search size={16}/>
             <input placeholder="Search name, email, department…" value={search} onChange={e => setSearch(e.target.value)}/>
-            {search && <button onClick={() => setSearch('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', display:'flex' }}><X size={14}/></button>}
+            {search && <button className="search-clear" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button>}
           </div>
-          <span className="text-sm text-muted">{filtered.length} result{filtered.length!==1?'s':''}</span>
-        </div>
+                  </div>
 
         {/* DESKTOP TABLE */}
         <div className="table-wrap">
@@ -119,7 +118,7 @@ export default function Teachers() {
                   <tr key={t._id}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div className="user-avatar" style={{ width:32, height:32, fontSize:13 }}>{initials(t.user?.name)}</div>
+                        <div className="user-avatar">{initials(t.user?.name)}</div>
                         <div>
                           <div style={{ fontWeight:500 }}>{t.user?.name}</div>
                           <div className="text-sm text-muted">{t.user?.email}</div>
@@ -159,7 +158,7 @@ export default function Teachers() {
               <div key={t._id} className="mobile-card-item">
                 <div className="mobile-card-header">
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <div className="user-avatar" style={{ width:38, height:38, fontSize:14 }}>{initials(t.user?.name)}</div>
+                    <div className="user-avatar" style={{ width:40, height:40, minWidth:40 }}>{initials(t.user?.name)}</div>
                     <div>
                       <div className="mobile-card-title">{t.user?.name}</div>
                       <div className="mobile-card-sub">{t.user?.email}</div>
@@ -216,7 +215,7 @@ export default function Teachers() {
             </div>
             <div className="form-group">
               <label className="form-label">Email *</label>
-              <input className="form-input" type="email" placeholder="jane@school.edu" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))}/>
+              <input className="form-input" type="email" placeholder="jane@example.com" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))}/>
             </div>
           </div>
         )}
@@ -233,7 +232,7 @@ export default function Teachers() {
           </div>
           <div className="form-group">
             <label className="form-label">Phone</label>
-            <input className="form-input" placeholder="+1 234 567 890" value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))}/>
+            <input className="form-input" type="tel" placeholder="+1 234 567 890" value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))}/>
           </div>
         </div>
         <div className="form-row">
@@ -258,9 +257,9 @@ export default function Teachers() {
       {viewModal && (
         <Modal open={!!viewModal} onClose={() => setViewModal(null)} title="Teacher Profile"
           footer={<button className="btn btn-ghost" onClick={() => setViewModal(null)}>Close</button>}>
-          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 0', borderBottom:'1px solid var(--border)' }}>
-              <div className="user-avatar" style={{ width:52, height:52, fontSize:20 }}>{initials(viewModal.user?.name)}</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:14, paddingBottom:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:14, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+              <div className="user-avatar" style={{ width:52, height:52, minWidth:52, fontSize:17 }}>{initials(viewModal.user?.name)}</div>
               <div>
                 <div style={{ fontWeight:600, fontSize:16 }}>{viewModal.user?.name}</div>
                 <div className="text-muted text-sm">{viewModal.user?.email}</div>
@@ -275,9 +274,9 @@ export default function Teachers() {
               ['Grades',     viewModal.grades?.join(', ') || '—'],
               ['Joined',     viewModal.joiningDate ? new Date(viewModal.joiningDate).toLocaleDateString() : '—'],
             ].map(([k,v]) => (
-              <div key={k} style={{ display:'flex', justifyContent:'space-between', fontSize:13.5 }}>
+              <div key={k} className="detail-row">
                 <span className="text-muted">{k}</span>
-                <span style={{ fontWeight:500 }}>{v}</span>
+                <span>{v}</span>
               </div>
             ))}
           </div>

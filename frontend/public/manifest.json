@@ -1,18 +1,17 @@
 {
+  "id": "/",
   "short_name": "Teachers MS",
   "name": "Teachers Management System",
   "description": "Teacher dashboard and attendance scanner system.",
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any"
-    }
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
   "start_url": "/dashboard",
-  "background_color": "#1e1e2e",
-  "theme_color": "#4f46e5",
+  "scope": "/",
+  "background_color": "#f6f6f3",
+  "theme_color": "#ffffff",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "any"
 }

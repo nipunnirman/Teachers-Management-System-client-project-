@@ -12,7 +12,7 @@ const PIE_COLORS = ['var(--green)','var(--red)','var(--amber)','var(--blue)','va
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'10px 14px' }}>
+    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', boxShadow:'0 8px 24px -12px rgba(22,24,29,0.25)' }}>
       {label && <p style={{ color:'var(--text-2)', fontSize:11, marginBottom:6 }}>{label}</p>}
       {payload.map(p => (
         <p key={p.name} style={{ color: p.color || 'var(--text-1)', fontSize:13, fontWeight:600 }}>
@@ -88,14 +88,14 @@ export default function Reports() {
       {/* Attendance Trend */}
       {attData.length > 0 && (
         <div className="card mb-6">
-          <h2 className="font-display" style={{ fontSize:18, marginBottom:4 }}>Attendance Trend</h2>
-          <p className="text-sm text-muted" style={{ marginBottom:20 }}>Monthly present / absent / late — {year}</p>
+          <h2 className="card-title">Attendance trend</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>Monthly present / absent / late · {year}</p>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={attData} barSize={9} barGap={2}>
-              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fill:'var(--text-3)', fontSize:11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:'var(--text-3)', fontSize:11 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill:'rgba(255,255,255,0.03)' }} />
+            <BarChart data={attData} barSize={9} barGap={2} margin={{ left:-24, right:4, top:4 }}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill:'var(--bg)' }} />
               <Legend wrapperStyle={{ fontSize:12, color:'var(--text-2)' }} />
               <Bar dataKey="present" name="Present" fill="var(--green)"  radius={[4,4,0,0]} />
               <Bar dataKey="absent"  name="Absent"  fill="var(--red)"    radius={[4,4,0,0]} />
@@ -109,14 +109,15 @@ export default function Reports() {
         {/* Leave by Type */}
         {leaveData.byType.length > 0 && (
           <div className="card">
-            <h2 className="font-display" style={{ fontSize:18, marginBottom:4 }}>Leave by Type</h2>
-            <p className="text-sm text-muted" style={{ marginBottom:20 }}>Approved leave days — {year}</p>
+            <h2 className="card-title">Leave by type</h2>
+            <p className="card-sub" style={{ marginBottom:16 }}>Approved leave days · {year}</p>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={leaveData.byType} dataKey="totalDays" nameKey="_id" cx="50%" cy="50%" outerRadius={80} label={({ _id, percent }) => `${_id} ${(percent*100).toFixed(0)}%`} labelLine={{ stroke:'var(--border)' }}>
+                <Pie data={leaveData.byType} dataKey="totalDays" nameKey="_id" cx="50%" cy="46%" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
                   {leaveData.byType.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:12.5, textTransform:'capitalize' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -125,14 +126,15 @@ export default function Reports() {
         {/* Leave by Status */}
         {leaveData.byStatus.length > 0 && (
           <div className="card">
-            <h2 className="font-display" style={{ fontSize:18, marginBottom:4 }}>Leave by Status</h2>
-            <p className="text-sm text-muted" style={{ marginBottom:20 }}>All requests — {year}</p>
+            <h2 className="card-title">Leave by status</h2>
+            <p className="card-sub" style={{ marginBottom:16 }}>All requests · {year}</p>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={leaveData.byStatus} dataKey="count" nameKey="_id" cx="50%" cy="50%" outerRadius={80} label={({ _id, percent }) => `${_id} ${(percent*100).toFixed(0)}%`} labelLine={{ stroke:'var(--border)' }}>
+                <Pie data={leaveData.byStatus} dataKey="count" nameKey="_id" cx="50%" cy="46%" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
                   {leaveData.byStatus.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:12.5, textTransform:'capitalize' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -142,14 +144,14 @@ export default function Reports() {
       {/* Salary trend */}
       {salData.length > 0 && (
         <div className="card mb-6">
-          <h2 className="font-display" style={{ fontSize:18, marginBottom:4 }}>Payroll Trend</h2>
-          <p className="text-sm text-muted" style={{ marginBottom:20 }}>Monthly gross vs net — {year}</p>
+          <h2 className="card-title">Payroll trend</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>Monthly gross vs net · {year}</p>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={salData} barSize={12} barGap={4}>
-              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fill:'var(--text-3)', fontSize:11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:'var(--text-3)', fontSize:11 }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill:'rgba(255,255,255,0.03)' }} />
+            <BarChart data={salData} barSize={12} barGap={4} margin={{ left:-16, right:4, top:4 }}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill:'var(--bg)' }} />
               <Legend wrapperStyle={{ fontSize:12, color:'var(--text-2)' }} />
               <Bar dataKey="gross" name="Gross" fill="var(--blue)"  radius={[4,4,0,0]} />
               <Bar dataKey="net"   name="Net"   fill="var(--green)" radius={[4,4,0,0]} />
@@ -161,8 +163,8 @@ export default function Reports() {
       {/* Workload table */}
       {workload.length > 0 && (
         <div className="card">
-          <h2 className="font-display" style={{ fontSize:18, marginBottom:4 }}>Teacher Workload</h2>
-          <p className="text-sm text-muted" style={{ marginBottom:20 }}>Periods assigned per teacher</p>
+          <h2 className="card-title">Teacher workload</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>Periods assigned per teacher</p>
           <div className="table-wrap">
             <table>
               <thead>
@@ -201,7 +203,7 @@ export default function Reports() {
                     <div className="mobile-card-title">{w.teacherName}</div>
                     <div className="mobile-card-sub">{w.teacherId} · {w.department || '—'}</div>
                   </div>
-                  <span style={{ fontFamily:'var(--font-display)', fontSize:22, color:'var(--gold)' }}>{w.totalPeriods}</span>
+                  <span style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.02em', color:'var(--text-1)' }}>{w.totalPeriods}</span>
                 </div>
                 {w.subjects?.length > 0 && (
                   <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>

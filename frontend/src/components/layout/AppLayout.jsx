@@ -1,38 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import BottomNav from './BottomNav';
+import { useUnreadCount } from './useUnreadCount';
 
 export default function AppLayout({ title, children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const unread = useUnreadCount();
 
-  // Close sidebar on route change or resize to desktop
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) setSidebarOpen(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const closeSidebar = () => setSidebarOpen(false);
+    document.title = title ? `${title} · Teachers Management System` : 'Teachers Management System';
+  }, [title]);
 
   return (
     <div className="app-shell">
-      {/* Overlay for mobile sidebar */}
-      <div
-        className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`}
-        onClick={closeSidebar}
-      />
-
-      <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+      <Sidebar unread={unread} />
 
       <div className="main-area">
-        <Topbar title={title} onMenuClick={() => setSidebarOpen(s => !s)} />
+        <Topbar unread={unread} />
         <main className="page-content animate-in">{children}</main>
       </div>
 
-      <BottomNav />
+      <BottomNav unread={unread} />
     </div>
   );
 }

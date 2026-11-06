@@ -68,7 +68,8 @@ export default function Attendance() {
   // Camera QR scanner integration
   useEffect(() => {
     let html5QrCode;
-    if (scannerOpen) {
+    // Wait for the page to finish loading so the #reader element exists.
+    if (scannerOpen && !loading) {
       const timer = setTimeout(() => {
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
@@ -113,7 +114,9 @@ export default function Attendance() {
         }
       };
     }
-  }, [scannerOpen]);
+  }, [scannerOpen, loading]);
+
+  const closeScanner = () => { setScannerOpen(false); setScanSuccess(null); }
 
 
   const load = async () => {
@@ -156,22 +159,22 @@ export default function Attendance() {
           <h1 className="page-title">{isAdmin ? 'Attendance Management' : 'My Attendance'}</h1>
           <p className="page-subtitle">{MONTHS[month-1]} {year}</p>
         </div>
-        <div className="page-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <select className="form-select" style={{ width:'auto', minHeight:38 }} value={month} onChange={e => setMonth(+e.target.value)}>
+        <div className="page-header-actions">
+          <select className="form-select" aria-label="Month" value={month} onChange={e => setMonth(+e.target.value)}>
             {MONTHS.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
           </select>
           {isAdmin ? (
             <>
-              <button className="btn btn-outline" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setQrModalOpen(true)}>
-                <QrCode size={15}/> Daily QR
+              <button className="btn btn-ghost" onClick={() => setQrModalOpen(true)}>
+                <QrCode size={16}/> Daily QR
               </button>
-              <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setModalOpen(true)}>
-                <Plus size={15}/> Mark
+              <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+                <Plus size={16}/> Mark
               </button>
             </>
           ) : (
-            <button className="btn btn-primary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => { setScanSuccess(null); setScannerOpen(true); }}>
-              <Camera size={15}/> Scan QR
+            <button className="btn btn-primary" onClick={() => { setScanSuccess(null); setScannerOpen(true); }}>
+              <Camera size={16}/> Scan QR
             </button>
           )}
         </div>
@@ -287,13 +290,13 @@ export default function Attendance() {
       {/* Admin QR Code Modal */}
       <Modal open={qrModalOpen} onClose={() => setQrModalOpen(false)} title="Today's Attendance QR Code"
         footer={<button className="btn btn-ghost" onClick={() => setQrModalOpen(false)}>Close</button>}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 0', gap: '16px' }}>
+        <div className="qr-panel">
           {qrToken ? (
             <>
-              <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+              <div className="qr-frame">
                 <QRCodeSVG value={qrToken} size={256} />
               </div>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center', maxWidth: '300px' }}>
+              <p className="qr-help">
                 Show this QR code to teachers. They can scan it from their phones to mark themselves present.
               </p>
             </>
@@ -304,29 +307,19 @@ export default function Attendance() {
       </Modal>
 
       {/* Teacher QR Scanner Modal */}
-      <Modal open={scannerOpen} onClose={() => setScannerOpen(false)} title="Scan Attendance QR Code"
-        footer={<button className="btn btn-ghost" onClick={() => setScannerOpen(false)}>{scanSuccess ? 'Done' : 'Cancel'}</button>}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px 0' }}>
+      <Modal open={scannerOpen || !!scanSuccess} onClose={closeScanner} title={scanSuccess ? 'Attendance marked' : 'Scan attendance QR code'}
+        footer={<button className="btn btn-ghost" onClick={closeScanner}>{scanSuccess ? 'Done' : 'Cancel'}</button>}>
+        <div className="qr-panel">
           {scanSuccess ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', animation: 'scaleUp 0.3s ease-out', width: '100%' }}>
-              <style dangerouslySetInnerHTML={{__html: `
-                @keyframes scaleUp {
-                  0% { transform: scale(0.6); opacity: 0; }
-                  100% { transform: scale(1); opacity: 1; }
-                }
-              `}} />
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', boxShadow: '0 0 0 8px #f0fdf4' }}>
-                <CheckCircle2 size={48} />
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#065f46', margin: 0 }}>Successfully Scanned</h3>
-              <p style={{ fontSize: '15px', color: '#047857', textAlign: 'center', margin: 0, fontWeight: '500', padding: '0 16px' }}>
-                {scanSuccess.message}
-              </p>
-            </div>
+            <>
+              <div className="scan-done-icon"><CheckCircle2 size={38} /></div>
+              <h3 className="scan-done-title">Successfully scanned</h3>
+              <p className="qr-help">{scanSuccess.message}</p>
+            </>
           ) : (
             <>
-              <div id="reader" style={{ width: '100%', maxWidth: '320px', minHeight: '240px', background: '#000', borderRadius: '8px', overflow: 'hidden' }}></div>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+              <div id="reader" className="scan-reader"></div>
+              <p className="qr-help">
                 Point your camera at the screen displaying the Daily QR code.
               </p>
             </>

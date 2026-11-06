@@ -11,7 +11,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const customTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 24px -12px rgba(22,24,29,0.25)' }}>
       <p style={{ color: 'var(--text-2)', fontSize: 12, marginBottom: 4 }}>{label}</p>
       {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color, fontSize: 13, fontWeight: 600 }}>
@@ -90,35 +90,29 @@ export default function Dashboard() {
         </div>
 
         {/* Today's Schedule Overview */}
-        <div className="card" style={{ marginTop: 24 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 16 }}>
+        <div className="card">
+          <div className="card-head">
             <div>
-              <h2 className="font-display" style={{ fontSize: 18 }}>Today's Schedule</h2>
-              <p className="text-sm text-muted">Your classes for today</p>
+              <h2 className="card-title">Today's schedule</h2>
+              <p className="card-sub">Your classes for today</p>
             </div>
-            <Clock size={20} style={{ color: 'var(--text-3)' }} />
+            <Clock size={18} />
           </div>
           {todayClassesList && todayClassesList.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="schedule-list">
               {todayClassesList.map(e => (
-                <div key={e._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px' }}>
-                  <div>
-                    <span style={{ background: '#3b82f618', color: '#3b82f6', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, marginRight: 8 }}>
-                      Period {e.period}
-                    </span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-1)' }}>{e.subject}</span>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{e.className} {e.grade && `· ${e.grade}`}</div>
+                <div key={e._id} className="schedule-row">
+                  <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
+                  <div className="schedule-main">
+                    <div className="schedule-subject">{e.subject}</div>
+                    <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)' }}>
-                    {e.startTime} – {e.endTime}
-                  </div>
+                  <div className="schedule-time">{e.startTime} – {e.endTime}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-3)' }}>
-              No classes scheduled for today.
-            </div>
+            <div className="quiet-empty">No classes scheduled for today.</div>
           )}
         </div>
       </AppLayout>
@@ -129,7 +123,7 @@ export default function Dashboard() {
     <AppLayout title="Dashboard">
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">School Overview</h1>
+          <h1 className="page-title">Overview</h1>
           <p className="page-subtitle">{new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
         </div>
       </div>
@@ -144,19 +138,19 @@ export default function Dashboard() {
 
       {data?.monthlyChart?.length > 0 && (
         <div className="card">
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 20 }}>
+          <div className="card-head">
             <div>
-              <h2 className="font-display" style={{ fontSize: 18 }}>Attendance Trend</h2>
-              <p className="text-sm text-muted">Monthly breakdown — {year}</p>
+              <h2 className="card-title">Attendance trend</h2>
+              <p className="card-sub">Monthly breakdown · {year}</p>
             </div>
-            <TrendingUp size={20} style={{ color: 'var(--text-3)' }} />
+            <TrendingUp size={18} />
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={data.monthlyChart} barSize={10} barGap={3}>
-              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip content={customTooltip} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={data.monthlyChart} barSize={10} barGap={3} margin={{ left: -24, right: 4, top: 4 }}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-3)', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fill: 'var(--text-3)', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip content={customTooltip} cursor={{ fill: 'var(--bg)' }} />
               <Bar dataKey="present" name="Present" fill="var(--green)"  radius={[4,4,0,0]} />
               <Bar dataKey="absent"  name="Absent"  fill="var(--red)"    radius={[4,4,0,0]} />
               <Bar dataKey="late"    name="Late"    fill="var(--amber)"  radius={[4,4,0,0]} />
