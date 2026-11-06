@@ -22,6 +22,93 @@ const customTooltip = ({ active, payload, label }) => {
   )
 }
 
+// Re-renders once a minute, on the minute change, rather than every second.
+function useNow() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => {
+      const current = new Date()
+      setNow(prev => (prev.getMinutes() === current.getMinutes() && prev.getHours() === current.getHours() ? prev : current))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [])
+  return now
+}
+
+function LiveClock() {
+  const now = useNow()
+  return (
+    <time className="live-clock" dateTime={now.toISOString()} aria-label="Current time">
+      {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+    </time>
+  )
+}
+
+// "08:30" -> minutes since midnight
+function toMinutes(time) {
+  const [h, m] = String(time || '').split(':').map(Number)
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
+}
+
+function formatWait(minutes) {
+  if (minutes < 60) return `in ${minutes} min`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m ? `in ${h} hr ${m} min` : `in ${h} hr`
+}
+
+function TodaySchedule({ classes }) {
+  const now = useNow()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+  const sorted = [...classes].sort((a, b) =>
+    (toMinutes(a.startTime) ?? 0) - (toMinutes(b.startTime) ?? 0) || (a.period ?? 0) - (b.period ?? 0)
+  )
+  const next = sorted.find(e => toMinutes(e.startTime) > nowMinutes)
+
+  let summary = 'No classes scheduled for today'
+  if (next) summary = `Next class ${formatWait(toMinutes(next.startTime) - nowMinutes)}`
+  else if (sorted.length > 0) summary = 'No more classes today'
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Today's schedule</h2>
+          <p className="card-sub">{summary}</p>
+        </div>
+        <Clock size={18} />
+      </div>
+      {sorted.length > 0 ? (
+        <div className="schedule-list">
+          {sorted.map(e => {
+            const start = toMinutes(e.startTime)
+            const end = toMinutes(e.endTime)
+            const isNext = e === next
+            const isNow = start !== null && end !== null && start <= nowMinutes && nowMinutes < end
+            const isPast = end !== null && nowMinutes >= end
+            const state = isNext ? ' next' : isPast ? ' past' : ''
+            return (
+              <div key={e._id} className={`schedule-row${state}`}>
+                <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
+                <div className="schedule-main">
+                  <div className="schedule-subject">{e.subject}</div>
+                  <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
+                  {isNext && <div className="schedule-flag">Next class</div>}
+                  {isNow && <div className="schedule-flag now">In progress</div>}
+                </div>
+                <div className="schedule-time">{e.startTime} – {e.endTime}</div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="quiet-empty">No classes scheduled for today.</div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { isAdmin, user } = useAuth()
   const [data, setData] = useState(null)
@@ -75,45 +162,21 @@ export default function Dashboard() {
     const { attendance, pendingLeaves, todayClasses, todayClassesList, weekClassesCount } = teacherData
     return (
       <AppLayout title="Dashboard">
-        <div className="page-header">
+        <div className="page-header home-header">
           <div className="page-header-left">
             <h1 className="page-title">Good {getGreeting()}, {user.name.split(' ')[0]}</h1>
-            <p className="page-subtitle">Here's your overview for {new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</p>
+            <p className="page-subtitle">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</p>
           </div>
+          <LiveClock />
         </div>
-        <div className="stats-grid">
+        <TodaySchedule classes={todayClassesList || []} />
+
+        <div className="stats-grid" style={{ marginTop: 14, marginBottom: 0 }}>
           <StatCard label="Present This Month" value={attendance?.summary?.present ?? '—'} accent="green" icon={CalendarCheck} />
           <StatCard label="Absent This Month"  value={attendance?.summary?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
           <StatCard label="Today's Classes"    value={todayClasses}                         accent="blue"  icon={Clock} />
           <StatCard label="Pending Leaves"     value={pendingLeaves}                        accent="amber" icon={CalendarOff} />
           <StatCard label="Weekly Classes"     value={weekClassesCount}                     accent="gold"  icon={Calendar} />
-        </div>
-
-        {/* Today's Schedule Overview */}
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <h2 className="card-title">Today's schedule</h2>
-              <p className="card-sub">Your classes for today</p>
-            </div>
-            <Clock size={18} />
-          </div>
-          {todayClassesList && todayClassesList.length > 0 ? (
-            <div className="schedule-list">
-              {todayClassesList.map(e => (
-                <div key={e._id} className="schedule-row">
-                  <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
-                  <div className="schedule-main">
-                    <div className="schedule-subject">{e.subject}</div>
-                    <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
-                  </div>
-                  <div className="schedule-time">{e.startTime} – {e.endTime}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="quiet-empty">No classes scheduled for today.</div>
-          )}
         </div>
       </AppLayout>
     )

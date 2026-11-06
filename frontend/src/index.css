@@ -436,6 +436,30 @@ tbody tr:last-child td { border-bottom: none; padding-bottom: 2px; }
 .schedule-meta { font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
 .schedule-time { font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .quiet-empty { padding: 20px 0 8px; text-align: center; color: var(--text-3); font-size: 14px; }
+.schedule-flag { margin-top: 3px; font-size: 12px; font-weight: 700; color: var(--accent); }
+.schedule-flag.now { color: var(--green); }
+.schedule-row.past .period-chip,
+.schedule-row.past .schedule-main,
+.schedule-row.past .schedule-time { opacity: 0.5; }
+.schedule-row.next {
+  margin: 4px -10px; padding: 12px 10px;
+  background: var(--accent); border-bottom-color: transparent; border-radius: var(--radius);
+}
+.schedule-row.next:first-child { margin-top: 0; padding-top: 12px; }
+.schedule-row.next:last-child { margin-bottom: 0; padding-bottom: 12px; }
+.schedule-row.next .period-chip { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.schedule-row.next .schedule-subject,
+.schedule-row.next .schedule-flag,
+.schedule-row.next .schedule-time { color: #fff; }
+.schedule-row.next .schedule-meta { color: rgba(255, 255, 255, 0.72); }
+
+/* ─── LIVE CLOCK ─── */
+.home-header { align-items: flex-start; flex-wrap: nowrap; }
+.home-header .page-header-left { flex: 1; }
+.live-clock {
+  flex-shrink: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text-1);
+}
 
 /* ─── TIMETABLE ─── */
 .timetable-desktop { padding: 20px 24px; }
@@ -577,6 +601,8 @@ td:hover > .tt-add, td:hover .tt-stack .tt-add, .tt-add:focus-visible { opacity:
 
   .page-header { flex-direction: column; align-items: stretch; gap: 14px; margin-bottom: 18px; }
   .page-title { font-size: 25px; }
+  .home-header { flex-direction: row; align-items: flex-start; }
+  .live-clock { font-size: 19px; line-height: 1.6; }
   .page-header-actions .btn { flex: 1; min-height: 44px; }
   .page-header-actions .form-select { flex: 1 1 100%; width: 100%; min-height: 44px; }
 
