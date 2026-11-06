@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getLanguage } from '../utils/i18n';
 
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({ baseURL });
@@ -6,13 +7,15 @@ const api = axios.create({ baseURL });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.headers['X-Language'] = getLanguage();
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    // A wrong password also returns 401; stay on the page so its error can show.
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

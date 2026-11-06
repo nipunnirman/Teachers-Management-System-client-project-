@@ -1,3 +1,4 @@
+const { dateLabel, dateLabelEn } = require('../utils/sinhala');
 const Leave = require('../models/Leave');
 const Teacher = require('../models/Teacher');
 const Notification = require('../models/Notification');
@@ -9,7 +10,7 @@ const User = require('../models/User');
 const applyLeave = async (req, res, next) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id });
-    if (!teacher) return res.status(404).json({ success: false, message: 'Teacher profile not found.' });
+    if (!teacher) return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
 
     const { leaveType, startDate, endDate, reason } = req.body;
     const leave = await Leave.create({ teacher: teacher._id, leaveType, startDate, endDate, reason });
@@ -18,13 +19,15 @@ const applyLeave = async (req, res, next) => {
     const admins = await User.find({ role: 'admin', isActive: true });
     const notifications = admins.map((admin) => ({
       recipient: admin._id,
-      title: 'New Leave Request',
-      message: `${req.user.name} has submitted a leave request from ${startDate} to ${endDate}.`,
+      title: 'නව නිවාඩු ඉල්ලීමක්',
+      titleEn: 'New Leave Request',
+      message: `${req.user.name} ${startDate} සිට ${endDate} දක්වා නිවාඩු ඉල්ලීමක් යොමු කර ඇත.`,
+      messageEn: `${req.user.name} has submitted a leave request from ${startDate} to ${endDate}.`,
       type: 'leave',
     }));
     await Notification.insertMany(notifications);
 
-    res.status(201).json({ success: true, message: 'Leave request submitted.', leave });
+    res.status(201).json({ success: true, message: 'නිවාඩු ඉල්ලීම යවන ලදී.', leave });
   } catch (error) {
     next(error);
   }
@@ -73,7 +76,7 @@ const reviewLeave = async (req, res, next) => {
     const { status, reviewNote } = req.body;
 
     if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Status must be approved or rejected.' });
+      return res.status(400).json({ success: false, message: 'තත්ත්වය අනුමත හෝ ප්‍රතික්ෂේප විය යුතුය.' });
     }
 
     const leave = await Leave.findById(req.params.id).populate({
@@ -81,9 +84,9 @@ const reviewLeave = async (req, res, next) => {
       populate: { path: 'user', select: 'name _id' },
     });
 
-    if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found.' });
+    if (!leave) return res.status(404).json({ success: false, message: 'නිවාඩු ඉල්ලීම හමු නොවීය.' });
     if (leave.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'This request has already been reviewed.' });
+      return res.status(400).json({ success: false, message: 'මෙම ඉල්ලීම දැනටමත් පරීක්ෂා කර ඇත.' });
     }
 
     leave.status = status;
@@ -95,12 +98,14 @@ const reviewLeave = async (req, res, next) => {
     // Notify the teacher
     await Notification.create({
       recipient: leave.teacher.user._id,
-      title: `Leave Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-      message: `Your leave request from ${leave.startDate.toDateString()} to ${leave.endDate.toDateString()} has been ${status}.${reviewNote ? ' Note: ' + reviewNote : ''}`,
+      title: status === 'approved' ? 'නිවාඩු ඉල්ලීම අනුමත විය' : 'නිවාඩු ඉල්ලීම ප්‍රතික්ෂේප විය',
+      titleEn: status === 'approved' ? 'Leave Request Approved' : 'Leave Request Rejected',
+      message: `${dateLabel(leave.startDate)} සිට ${dateLabel(leave.endDate)} දක්වා වූ ඔබගේ නිවාඩු ඉල්ලීම ${status === 'approved' ? 'අනුමත' : 'ප්‍රතික්ෂේප'} කර ඇත.${reviewNote ? ' සටහන: ' + reviewNote : ''}`,
+      messageEn: `Your leave request from ${dateLabelEn(leave.startDate)} to ${dateLabelEn(leave.endDate)} has been ${status}.${reviewNote ? ' Note: ' + reviewNote : ''}`,
       type: 'leave',
     });
 
-    res.status(200).json({ success: true, message: `Leave ${status}.`, leave });
+    res.status(200).json({ success: true, message: status === 'approved' ? 'නිවාඩුව අනුමත කරන ලදී.' : 'නිවාඩුව ප්‍රතික්ෂේප කරන ලදී.', leave });
   } catch (error) {
     next(error);
   }
@@ -112,17 +117,17 @@ const reviewLeave = async (req, res, next) => {
 const cancelLeave = async (req, res, next) => {
   try {
     const leave = await Leave.findById(req.params.id);
-    if (!leave) return res.status(404).json({ success: false, message: 'Leave not found.' });
+    if (!leave) return res.status(404).json({ success: false, message: 'නිවාඩු ඉල්ලීම හමු නොවීය.' });
 
     if (leave.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'Only pending requests can be cancelled.' });
+      return res.status(400).json({ success: false, message: 'පොරොත්තුවෙන් පවතින ඉල්ලීම් පමණක් අවලංගු කළ හැක.' });
     }
 
     leave.status = 'cancelled';
     leave.isCancelled = true;
     await leave.save();
 
-    res.status(200).json({ success: true, message: 'Leave request cancelled.', leave });
+    res.status(200).json({ success: true, message: 'නිවාඩු ඉල්ලීම අවලංගු කරන ලදී.', leave });
   } catch (error) {
     next(error);
   }

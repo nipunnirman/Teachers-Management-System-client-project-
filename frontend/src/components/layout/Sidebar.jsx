@@ -1,26 +1,29 @@
+import { tr } from '../../utils/i18n'
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { APP_NAME, ROLE_LABELS } from '../../utils/locale';
+import LanguageSwitch from './LanguageSwitch';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
   Clock, BarChart2, Bell, LogOut
 } from 'lucide-react';
 
 const adminNav = [
-  { label: 'Dashboard',     to: '/dashboard',     icon: LayoutDashboard },
-  { label: 'Teachers',      to: '/teachers',      icon: Users },
-  { label: 'Attendance',    to: '/attendance',    icon: CalendarCheck },
-  { label: 'Leave',         to: '/leave',         icon: CalendarOff },
-  { label: 'Timetable',     to: '/timetable',     icon: Clock },
-  { label: 'Reports',       to: '/reports',       icon: BarChart2 },
-  { label: 'Notifications', to: '/notifications', icon: Bell },
+  { label: tr('මුල් පිටුව'),     to: '/dashboard',     icon: LayoutDashboard },
+  { label: tr('ගුරුවරු'),      to: '/teachers',      icon: Users },
+  { label: tr('පැමිණීම'),    to: '/attendance',    icon: CalendarCheck },
+  { label: tr('නිවාඩු'),         to: '/leave',         icon: CalendarOff },
+  { label: tr('කාලසටහන'),     to: '/timetable',     icon: Clock },
+  { label: tr('වාර්තා'),       to: '/reports',       icon: BarChart2 },
+  { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
 ];
 
 const teacherNav = [
-  { label: 'Dashboard',     to: '/dashboard',     icon: LayoutDashboard },
-  { label: 'My Attendance', to: '/attendance',    icon: CalendarCheck },
-  { label: 'My Leave',      to: '/leave',         icon: CalendarOff },
-  { label: 'My Timetable',  to: '/timetable',     icon: Clock },
-  { label: 'Notifications', to: '/notifications', icon: Bell },
+  { label: tr('මුල් පිටුව'),     to: '/dashboard',     icon: LayoutDashboard },
+  { label: tr('මගේ පැමිණීම'), to: '/attendance',    icon: CalendarCheck },
+  { label: tr('මගේ නිවාඩු'),      to: '/leave',         icon: CalendarOff },
+  { label: tr('මගේ කාලසටහන'),  to: '/timetable',     icon: Clock },
+  { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
 ];
 
 export default function Sidebar({ unread = 0 }) {
@@ -34,7 +37,7 @@ export default function Sidebar({ unread = 0 }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <h1>Teachers Management System</h1>
+        <h1>{APP_NAME}</h1>
       </div>
 
       <nav className="nav-section">
@@ -52,13 +55,14 @@ export default function Sidebar({ unread = 0 }) {
       </nav>
 
       <div className="sidebar-footer">
+        <LanguageSwitch />
         <div className="user-chip">
           <div className="user-avatar">{initials}</div>
           <div className="user-chip-info">
             <div className="user-chip-name">{user?.name}</div>
-            <div className="user-chip-role">{user?.role}</div>
+            <div className="user-chip-role">{ROLE_LABELS[user?.role] || user?.role}</div>
           </div>
-          <button className="logout-btn" onClick={handleLogout} title="Sign out" aria-label="Sign out">
+          <button className="logout-btn" onClick={handleLogout} title={tr('ඉවත් වන්න')} aria-label={tr('ඉවත් වන්න')}>
             <LogOut size={17} />
           </button>
         </div>

@@ -11,24 +11,24 @@ const protect = async (req, res, next) => {
     }
 
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Not authorized. No token provided.' });
+      return res.status(401).json({ success: false, message: 'ප්‍රවේශයට අවසර නැත. කරුණාකර පිවිසෙන්න.' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'User no longer exists.' });
+      return res.status(401).json({ success: false, message: 'මෙම පරිශීලකයා තවදුරටත් නොමැත.' });
     }
 
     if (!user.isActive) {
-      return res.status(401).json({ success: false, message: 'Account is deactivated.' });
+      return res.status(401).json({ success: false, message: 'මෙම ගිණුම අක්‍රීය කර ඇත.' });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Not authorized. Invalid token.' });
+    return res.status(401).json({ success: false, message: 'ප්‍රවේශයට අවසර නැත. කරුණාකර නැවත පිවිසෙන්න.' });
   }
 };
 
@@ -38,7 +38,7 @@ const authorize = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Role '${req.user.role}' is not authorized to access this route.`,
+        message: 'මෙම ක්‍රියාව සඳහා ඔබට අවසර නැත.',
       });
     }
     next();

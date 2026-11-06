@@ -1,3 +1,4 @@
+import { tr } from '../utils/i18n'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import AppLayout from '../components/layout/AppLayout'
@@ -5,8 +6,9 @@ import { StatCard, PageLoader } from '../components/common'
 import { reportAPI, attendanceAPI, leaveAPI, timetableAPI } from '../api'
 import { Users, CalendarCheck, CalendarOff, Clock, Calendar, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { MONTHS_SHORT, formatDayDate, formatFullDate, formatTime, periodLabel } from '../utils/locale'
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTHS = MONTHS_SHORT
 
 const customTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -38,8 +40,8 @@ function useNow() {
 function LiveClock() {
   const now = useNow()
   return (
-    <time className="live-clock" dateTime={now.toISOString()} aria-label="Current time">
-      {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+    <time className="live-clock" dateTime={now.toISOString()} aria-label={tr('වත්මන් වේලාව')}>
+      {formatTime(now)}
     </time>
   )
 }
@@ -51,10 +53,10 @@ function toMinutes(time) {
 }
 
 function formatWait(minutes) {
-  if (minutes < 60) return `in ${minutes} min`
+  if (minutes < 60) return tr('තව මිනිත්තු {m}', { m: minutes })
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
-  return m ? `in ${h} hr ${m} min` : `in ${h} hr`
+  return m ? tr('තව පැය {h} මිනිත්තු {m}', { h, m }) : tr('තව පැය {h}', { h })
 }
 
 function TodaySchedule({ classes }) {
@@ -66,15 +68,15 @@ function TodaySchedule({ classes }) {
   )
   const next = sorted.find(e => toMinutes(e.startTime) > nowMinutes)
 
-  let summary = 'No classes scheduled for today'
-  if (next) summary = `Next class ${formatWait(toMinutes(next.startTime) - nowMinutes)}`
-  else if (sorted.length > 0) summary = 'No more classes today'
+  let summary = tr('අද පන්ති නොමැත')
+  if (next) summary = tr('ඊළඟ පන්තියට {wait}', { wait: formatWait(toMinutes(next.startTime) - nowMinutes) })
+  else if (sorted.length > 0) summary = tr('අද තවත් පන්ති නොමැත')
 
   return (
     <div className="card">
       <div className="card-head">
         <div>
-          <h2 className="card-title">Today's schedule</h2>
+          <h2 className="card-title">{tr('අද කාලසටහන')}</h2>
           <p className="card-sub">{summary}</p>
         </div>
         <Clock size={18} />
@@ -90,12 +92,12 @@ function TodaySchedule({ classes }) {
             const state = isNext ? ' next' : isPast ? ' past' : ''
             return (
               <div key={e._id} className={`schedule-row${state}`}>
-                <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
+                <span className="period-chip" title={periodLabel(e.period)}>{e.period}</span>
                 <div className="schedule-main">
                   <div className="schedule-subject">{e.subject}</div>
                   <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
-                  {isNext && <div className="schedule-flag">Next class</div>}
-                  {isNow && <div className="schedule-flag now">In progress</div>}
+                  {isNext && <div className="schedule-flag">{tr('ඊළඟ පන්තිය')}</div>}
+                  {isNow && <div className="schedule-flag now">{tr('දැන් පැවැත්වේ')}</div>}
                 </div>
                 <div className="schedule-time">{e.startTime} – {e.endTime}</div>
               </div>
@@ -103,7 +105,7 @@ function TodaySchedule({ classes }) {
           })}
         </div>
       ) : (
-        <div className="quiet-empty">No classes scheduled for today.</div>
+        <div className="quiet-empty">{tr('අද පන්ති සැලසුම් කර නොමැත.')}</div>
       )}
     </div>
   )
@@ -156,55 +158,55 @@ export default function Dashboard() {
     }
   }, [isAdmin])
 
-  if (loading) return <AppLayout title="Dashboard"><PageLoader /></AppLayout>
+  if (loading) return <AppLayout title={tr('මුල් පිටුව')}><PageLoader /></AppLayout>
 
   if (!isAdmin && teacherData) {
     const { attendance, pendingLeaves, todayClasses, todayClassesList, weekClassesCount } = teacherData
     return (
-      <AppLayout title="Dashboard">
+      <AppLayout title={tr('මුල් පිටුව')}>
         <div className="page-header home-header">
           <div className="page-header-left">
-            <h1 className="page-title">Good {getGreeting()}, {user.name.split(' ')[0]}</h1>
-            <p className="page-subtitle">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</p>
+            <h1 className="page-title">{getGreeting()}, {user.name.split(' ')[0]}</h1>
+            <p className="page-subtitle">{formatDayDate(new Date())}</p>
           </div>
           <LiveClock />
         </div>
         <TodaySchedule classes={todayClassesList || []} />
 
         <div className="stats-grid" style={{ marginTop: 14, marginBottom: 0 }}>
-          <StatCard label="Present This Month" value={attendance?.summary?.present ?? '—'} accent="green" icon={CalendarCheck} />
-          <StatCard label="Absent This Month"  value={attendance?.summary?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
-          <StatCard label="Today's Classes"    value={todayClasses}                         accent="blue"  icon={Clock} />
-          <StatCard label="Pending Leaves"     value={pendingLeaves}                        accent="amber" icon={CalendarOff} />
-          <StatCard label="Weekly Classes"     value={weekClassesCount}                     accent="gold"  icon={Calendar} />
+          <StatCard label={tr('මාසයේ පැමිණි දින')} value={attendance?.summary?.present ?? '—'} accent="green" icon={CalendarCheck} />
+          <StatCard label={tr('මාසයේ නොපැමිණි දින')}  value={attendance?.summary?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
+          <StatCard label={tr('අද පන්ති')}    value={todayClasses}                         accent="blue"  icon={Clock} />
+          <StatCard label={tr('පොරොත්තු නිවාඩු')}     value={pendingLeaves}                        accent="amber" icon={CalendarOff} />
+          <StatCard label={tr('සතියේ පන්ති')}     value={weekClassesCount}                     accent="gold"  icon={Calendar} />
         </div>
       </AppLayout>
     )
   }
 
   return (
-    <AppLayout title="Dashboard">
+    <AppLayout title={tr('මුල් පිටුව')}>
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">Overview</h1>
-          <p className="page-subtitle">{new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+          <h1 className="page-title">{tr('සමාලෝචනය')}</h1>
+          <p className="page-subtitle">{formatFullDate(new Date())}</p>
         </div>
       </div>
 
       <div className="stats-grid">
-        <StatCard label="Total Teachers"    value={data?.totalTeachers ?? '—'}    accent="gold"  icon={Users} />
-        <StatCard label="Present Today"     value={data?.todayAttendance?.present ?? '—'} accent="green" icon={CalendarCheck} />
-        <StatCard label="Absent Today"      value={data?.todayAttendance?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
-        <StatCard label="Pending Leaves"    value={data?.pendingLeaves ?? '—'}     accent="amber" icon={CalendarOff} />
-        <StatCard label="Weekly Classes"    value={data?.timetableCount ?? '—'}    accent="blue"  icon={Calendar} />
+        <StatCard label={tr('මුළු ගුරුවරු')}    value={data?.totalTeachers ?? '—'}    accent="gold"  icon={Users} />
+        <StatCard label={tr('අද පැමිණි')}     value={data?.todayAttendance?.present ?? '—'} accent="green" icon={CalendarCheck} />
+        <StatCard label={tr('අද නොපැමිණි')}      value={data?.todayAttendance?.absent ?? '—'}  accent="red"   icon={CalendarOff} />
+        <StatCard label={tr('පොරොත්තු නිවාඩු')}    value={data?.pendingLeaves ?? '—'}     accent="amber" icon={CalendarOff} />
+        <StatCard label={tr('සතියේ පන්ති')}    value={data?.timetableCount ?? '—'}    accent="blue"  icon={Calendar} />
       </div>
 
       {data?.monthlyChart?.length > 0 && (
         <div className="card">
           <div className="card-head">
             <div>
-              <h2 className="card-title">Attendance trend</h2>
-              <p className="card-sub">Monthly breakdown · {year}</p>
+              <h2 className="card-title">{tr('පැමිණීමේ ප්‍රවණතාව')}</h2>
+              <p className="card-sub">{tr('මාසික විස්තරය · {year}', { year })}</p>
             </div>
             <TrendingUp size={18} />
           </div>
@@ -214,9 +216,9 @@ export default function Dashboard() {
               <XAxis dataKey="month" tick={{ fill: 'var(--text-3)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fill: 'var(--text-3)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <Tooltip content={customTooltip} cursor={{ fill: 'var(--bg)' }} />
-              <Bar dataKey="present" name="Present" fill="var(--green)"  radius={[4,4,0,0]} />
-              <Bar dataKey="absent"  name="Absent"  fill="var(--red)"    radius={[4,4,0,0]} />
-              <Bar dataKey="late"    name="Late"    fill="var(--amber)"  radius={[4,4,0,0]} />
+              <Bar dataKey="present" name={tr('පැමිණි')} fill="var(--green)"  radius={[4,4,0,0]} />
+              <Bar dataKey="absent"  name={tr('නොපැමිණි')}  fill="var(--red)"    radius={[4,4,0,0]} />
+              <Bar dataKey="late"    name={tr('ප්‍රමාද')}    fill="var(--amber)"  radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -227,7 +229,7 @@ export default function Dashboard() {
 
 function getGreeting() {
   const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
+  if (h < 12) return tr('සුභ උදෑසනක්')
+  if (h < 17) return tr('සුභ දහවලක්')
+  return tr('සුභ සන්ධ්‍යාවක්')
 }

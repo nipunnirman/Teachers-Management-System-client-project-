@@ -1,3 +1,4 @@
+const { pick } = require('../utils/sinhala');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
@@ -32,7 +33,7 @@ const markAsRead = async (req, res, next) => {
       { isRead: true, readAt: new Date() },
       { new: true }
     );
-    if (!notification) return res.status(404).json({ success: false, message: 'Notification not found.' });
+    if (!notification) return res.status(404).json({ success: false, message: 'දැනුම්දීම හමු නොවීය.' });
 
     res.status(200).json({ success: true, notification });
   } catch (error) {
@@ -49,7 +50,7 @@ const markAllAsRead = async (req, res, next) => {
       { recipient: req.user.id, isRead: false },
       { isRead: true, readAt: new Date() }
     );
-    res.status(200).json({ success: true, message: 'All notifications marked as read.' });
+    res.status(200).json({ success: true, message: 'සියලු දැනුම්දීම් කියවූ ලෙස සලකුණු කරන ලදී.' });
   } catch (error) {
     next(error);
   }
@@ -80,7 +81,7 @@ const sendAnnouncement = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `Announcement sent to ${notifications.length} users.`,
+      message: pick(req, `පරිශීලකයින් ${notifications.length} දෙනෙකුට නිවේදනය යවන ලදී.`, `Announcement sent to ${notifications.length} users.`),
     });
   } catch (error) {
     next(error);
@@ -93,7 +94,7 @@ const sendAnnouncement = async (req, res, next) => {
 const deleteNotification = async (req, res, next) => {
   try {
     await Notification.findOneAndDelete({ _id: req.params.id, recipient: req.user.id });
-    res.status(200).json({ success: true, message: 'Notification deleted.' });
+    res.status(200).json({ success: true, message: 'දැනුම්දීම මකන ලදී.' });
   } catch (error) {
     next(error);
   }

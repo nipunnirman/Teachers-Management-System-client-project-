@@ -1,3 +1,4 @@
+import { tr } from '../../utils/i18n'
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -5,28 +6,30 @@ import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
   Clock, Bell, Camera, BarChart2, Menu, LogOut,
 } from 'lucide-react';
+import { ROLE_LABELS } from '../../utils/locale';
+import LanguageSwitch from './LanguageSwitch';
 
 const adminTabs = [
-  { label: 'Home',       to: '/dashboard',  icon: LayoutDashboard },
-  { label: 'Teachers',   to: '/teachers',   icon: Users },
-  { label: 'Attendance', to: '/attendance', icon: CalendarCheck },
-  { label: 'Leave',      to: '/leave',      icon: CalendarOff },
+  { label: tr('මුල් පිටුව'),       to: '/dashboard',  icon: LayoutDashboard },
+  { label: tr('ගුරුවරු'),   to: '/teachers',   icon: Users },
+  { label: tr('පැමිණීම'), to: '/attendance', icon: CalendarCheck },
+  { label: tr('නිවාඩු'),      to: '/leave',      icon: CalendarOff },
 ];
 const adminMore = [
-  { label: 'Timetable',     to: '/timetable',     icon: Clock },
-  { label: 'Reports',       to: '/reports',       icon: BarChart2 },
-  { label: 'Notifications', to: '/notifications', icon: Bell },
+  { label: tr('කාලසටහන'),     to: '/timetable',     icon: Clock },
+  { label: tr('වාර්තා'),       to: '/reports',       icon: BarChart2 },
+  { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
 ];
 
 const teacherTabs = [
-  { label: 'Home',       to: '/dashboard',  icon: LayoutDashboard },
-  { label: 'Attendance', to: '/attendance', icon: CalendarCheck },
-  { label: 'Scan',       to: '/attendance?scan=true', icon: Camera, primary: true },
-  { label: 'Timetable',  to: '/timetable',  icon: Clock },
+  { label: tr('මුල් පිටුව'),       to: '/dashboard',  icon: LayoutDashboard },
+  { label: tr('පැමිණීම'), to: '/attendance', icon: CalendarCheck },
+  { label: tr('ස්කෑන්'),       to: '/attendance?scan=true', icon: Camera, primary: true },
+  { label: tr('කාලසටහන'),  to: '/timetable',  icon: Clock },
 ];
 const teacherMore = [
-  { label: 'My Leave',      to: '/leave',         icon: CalendarOff },
-  { label: 'Notifications', to: '/notifications', icon: Bell },
+  { label: tr('මගේ නිවාඩු'),      to: '/leave',         icon: CalendarOff },
+  { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
 ];
 
 export default function BottomNav({ unread = 0 }) {
@@ -53,7 +56,7 @@ export default function BottomNav({ unread = 0 }) {
 
   return (
     <>
-      <nav className="bottom-nav" aria-label="Main">
+      <nav className="bottom-nav" aria-label={tr('ප්‍රධාන මෙනුව')}>
         <div className="bottom-nav-inner">
           {tabs.map(({ label, to, icon: Icon, primary }) => (
             primary ? (
@@ -79,7 +82,7 @@ export default function BottomNav({ unread = 0 }) {
             aria-expanded={moreOpen}
           >
             <span className="bottom-nav-icon"><Menu size={20} /></span>
-            <span className="bottom-nav-label">More</span>
+            <span className="bottom-nav-label">{tr('තවත්')}</span>
           </button>
         </div>
       </nav>
@@ -87,13 +90,13 @@ export default function BottomNav({ unread = 0 }) {
       {moreOpen && (
         <>
           <div className="sheet-overlay" onClick={() => setMoreOpen(false)} />
-          <div className="more-sheet" role="dialog" aria-label="More">
+          <div className="more-sheet" role="dialog" aria-label={tr('තවත්')}>
             <div className="sheet-handle" />
             <div className="user-chip">
               <div className="user-avatar">{initials}</div>
               <div className="user-chip-info">
                 <div className="user-chip-name">{user?.name}</div>
-                <div className="user-chip-role">{user?.role}</div>
+                <div className="user-chip-role">{ROLE_LABELS[user?.role] || user?.role}</div>
               </div>
             </div>
             {more.map(({ label, to, icon: Icon }) => (
@@ -108,6 +111,7 @@ export default function BottomNav({ unread = 0 }) {
                 {to === '/notifications' && unread > 0 && <span className="nav-count">{unread > 99 ? '99+' : unread}</span>}
               </NavLink>
             ))}
+            <LanguageSwitch />
             <button
               type="button"
               className="nav-item"
@@ -115,7 +119,7 @@ export default function BottomNav({ unread = 0 }) {
               style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--red)' }}
             >
               <LogOut className="nav-icon" size={19} />
-              Sign out
+              {tr('ඉවත් වන්න')}
             </button>
           </div>
         </>

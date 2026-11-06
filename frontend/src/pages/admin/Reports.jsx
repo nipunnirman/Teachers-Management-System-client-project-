@@ -1,12 +1,14 @@
+import { tr } from '../../utils/i18n'
 import { useEffect, useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import { PageLoader, StatCard } from '../../components/common'
 import { reportAPI } from '../../api'
 import toast from 'react-hot-toast'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
-import { Users, DollarSign, CalendarOff, TrendingUp } from 'lucide-react'
+import { Users, Wallet, CalendarOff, TrendingUp } from 'lucide-react'
+import { LEAVE_TYPE_LABELS, MONTHS_SHORT, STATUS_LABELS } from '../../utils/locale'
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTHS = MONTHS_SHORT
 const PIE_COLORS = ['var(--green)','var(--red)','var(--amber)','var(--blue)','var(--gold)','var(--text-2)']
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -16,7 +18,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       {label && <p style={{ color:'var(--text-2)', fontSize:11, marginBottom:6 }}>{label}</p>}
       {payload.map(p => (
         <p key={p.name} style={{ color: p.color || 'var(--text-1)', fontSize:13, fontWeight:600 }}>
-          {p.name}: {typeof p.value === 'number' && p.value > 999 ? `$${p.value.toLocaleString()}` : p.value}
+          {p.name}: {typeof p.value === 'number' && p.value > 999 ? tr('රු. {amount}', { amount: p.value.toLocaleString() }) : p.value}
         </p>
       ))}
     </div>
@@ -49,7 +51,10 @@ export default function Reports() {
         mMap[m][_id.status] = count
       })
       setAttData(Object.values(mMap))
-      setLeaveData({ byType: lv.data.byType, byStatus: lv.data.byStatus })
+      setLeaveData({
+        byType: lv.data.byType.map(d => ({ ...d, _id: LEAVE_TYPE_LABELS[d._id] || d._id })),
+        byStatus: lv.data.byStatus.map(d => ({ ...d, _id: STATUS_LABELS[d._id] || d._id })),
+      })
       // Monthly salary
       const sMap = sal.data.monthly.map(m => ({
         month: MONTHS[m._id - 1],
@@ -59,37 +64,37 @@ export default function Reports() {
       }))
       setSalData(sMap)
       setWorkload(wl.data.workload.slice(0,10))
-    }).catch(() => toast.error('Failed to load reports'))
+    }).catch(() => toast.error(tr('වාර්තා ලබාගැනීමට නොහැකි විය')))
     .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <AppLayout title="Reports"><PageLoader /></AppLayout>
+  if (loading) return <AppLayout title={tr('වාර්තා')}><PageLoader /></AppLayout>
 
   return (
-    <AppLayout title="Reports & Analytics">
+    <AppLayout title={tr('වාර්තා සහ විශ්ලේෂණ')}>
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">Reports & Analytics</h1>
-          <p className="page-subtitle">Year {year} overview</p>
+          <h1 className="page-title">{tr('වාර්තා සහ විශ්ලේෂණ')}</h1>
+          <p className="page-subtitle">{tr('{year} වර්ෂයේ සාරාංශය', { year })}</p>
         </div>
       </div>
 
       {/* KPI Cards */}
       {dash && (
         <div className="stats-grid">
-          <StatCard label="Total Teachers"     value={dash.totalTeachers}    accent="gold"  icon={Users} />
-          <StatCard label="Present Today"      value={dash.todayAttendance?.present} accent="green" icon={TrendingUp} />
-          <StatCard label="Absent Today"       value={dash.todayAttendance?.absent}  accent="red"   icon={CalendarOff} />
-          <StatCard label="Pending Leaves"     value={dash.pendingLeaves}    accent="amber" icon={CalendarOff} />
-          <StatCard label="Monthly Payroll"    value={`$${(dash.totalSalaryThisMonth||0).toLocaleString()}`} accent="blue" icon={DollarSign} />
+          <StatCard label={tr('මුළු ගුරුවරු')}     value={dash.totalTeachers}    accent="gold"  icon={Users} />
+          <StatCard label={tr('අද පැමිණි')}      value={dash.todayAttendance?.present} accent="green" icon={TrendingUp} />
+          <StatCard label={tr('අද නොපැමිණි')}       value={dash.todayAttendance?.absent}  accent="red"   icon={CalendarOff} />
+          <StatCard label={tr('පොරොත්තු නිවාඩු')}     value={dash.pendingLeaves}    accent="amber" icon={CalendarOff} />
+          <StatCard label={tr('මාසික වැටුප්')}    value={tr('රු. {amount}', { amount: (dash.totalSalaryThisMonth||0).toLocaleString() })} accent="blue" icon={Wallet} />
         </div>
       )}
 
       {/* Attendance Trend */}
       {attData.length > 0 && (
         <div className="card mb-6">
-          <h2 className="card-title">Attendance trend</h2>
-          <p className="card-sub" style={{ marginBottom:16 }}>Monthly present / absent / late · {year}</p>
+          <h2 className="card-title">{tr('පැමිණීමේ ප්‍රවණතාව')}</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>{tr('මාසික පැමිණි / නොපැමිණි / ප්‍රමාද · {year}', { year })}</p>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={attData} barSize={9} barGap={2} margin={{ left:-24, right:4, top:4 }}>
               <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -97,9 +102,9 @@ export default function Reports() {
               <YAxis allowDecimals={false} tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill:'var(--bg)' }} />
               <Legend wrapperStyle={{ fontSize:12, color:'var(--text-2)' }} />
-              <Bar dataKey="present" name="Present" fill="var(--green)"  radius={[4,4,0,0]} />
-              <Bar dataKey="absent"  name="Absent"  fill="var(--red)"    radius={[4,4,0,0]} />
-              <Bar dataKey="late"    name="Late"    fill="var(--amber)"  radius={[4,4,0,0]} />
+              <Bar dataKey="present" name={tr('පැමිණි')} fill="var(--green)"  radius={[4,4,0,0]} />
+              <Bar dataKey="absent"  name={tr('නොපැමිණි')}  fill="var(--red)"    radius={[4,4,0,0]} />
+              <Bar dataKey="late"    name={tr('ප්‍රමාද')}    fill="var(--amber)"  radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -109,8 +114,8 @@ export default function Reports() {
         {/* Leave by Type */}
         {leaveData.byType.length > 0 && (
           <div className="card">
-            <h2 className="card-title">Leave by type</h2>
-            <p className="card-sub" style={{ marginBottom:16 }}>Approved leave days · {year}</p>
+            <h2 className="card-title">{tr('වර්ගය අනුව නිවාඩු')}</h2>
+            <p className="card-sub" style={{ marginBottom:16 }}>{tr('අනුමත නිවාඩු දින · {year}', { year })}</p>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={leaveData.byType} dataKey="totalDays" nameKey="_id" cx="50%" cy="46%" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
@@ -126,8 +131,8 @@ export default function Reports() {
         {/* Leave by Status */}
         {leaveData.byStatus.length > 0 && (
           <div className="card">
-            <h2 className="card-title">Leave by status</h2>
-            <p className="card-sub" style={{ marginBottom:16 }}>All requests · {year}</p>
+            <h2 className="card-title">{tr('තත්ත්වය අනුව නිවාඩු')}</h2>
+            <p className="card-sub" style={{ marginBottom:16 }}>{tr('සියලු ඉල්ලීම් · {year}', { year })}</p>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={leaveData.byStatus} dataKey="count" nameKey="_id" cx="50%" cy="46%" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
@@ -144,17 +149,17 @@ export default function Reports() {
       {/* Salary trend */}
       {salData.length > 0 && (
         <div className="card mb-6">
-          <h2 className="card-title">Payroll trend</h2>
-          <p className="card-sub" style={{ marginBottom:16 }}>Monthly gross vs net · {year}</p>
+          <h2 className="card-title">{tr('වැටුප් ප්‍රවණතාව')}</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>{tr('මාසික දළ සහ ශුද්ධ වැටුප් · {year}', { year })}</p>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={salData} barSize={12} barGap={4} margin={{ left:-16, right:4, top:4 }}>
               <CartesianGrid vertical={false} stroke="var(--border)" />
               <XAxis dataKey="month" tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <YAxis tick={{ fill:'var(--text-3)', fontSize:12 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill:'var(--bg)' }} />
               <Legend wrapperStyle={{ fontSize:12, color:'var(--text-2)' }} />
-              <Bar dataKey="gross" name="Gross" fill="var(--blue)"  radius={[4,4,0,0]} />
-              <Bar dataKey="net"   name="Net"   fill="var(--green)" radius={[4,4,0,0]} />
+              <Bar dataKey="gross" name={tr('දළ')} fill="var(--blue)"  radius={[4,4,0,0]} />
+              <Bar dataKey="net"   name={tr('ශුද්ධ')}   fill="var(--green)" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -163,12 +168,12 @@ export default function Reports() {
       {/* Workload table */}
       {workload.length > 0 && (
         <div className="card">
-          <h2 className="card-title">Teacher workload</h2>
-          <p className="card-sub" style={{ marginBottom:16 }}>Periods assigned per teacher</p>
+          <h2 className="card-title">{tr('ගුරු කාර්යභාරය')}</h2>
+          <p className="card-sub" style={{ marginBottom:16 }}>{tr('එක් ගුරුවරයෙකුට පවරා ඇති කාලච්ඡේද')}</p>
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Teacher</th><th>ID</th><th>Department</th><th>Subjects</th><th>Total Periods</th></tr>
+                <tr><th>{tr('ගුරුවරයා')}</th><th>{tr('අංකය')}</th><th>{tr('අංශය')}</th><th>{tr('විෂයයන්')}</th><th>{tr('මුළු කාලච්ඡේද')}</th></tr>
               </thead>
               <tbody>
                 {workload.map((w,i) => (

@@ -14,7 +14,14 @@ export function AuthProvider({ children }) {
     if (token) {
       authAPI.getMe()
         .then(r => setUser(r.data.user))
-        .catch(() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); })
+        .catch((err) => {
+          // Stay signed in through network or server errors; only a rejected token ends the session.
+          if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        })
         .finally(() => setLoading(false));
     } else { setLoading(false); }
   }, []);

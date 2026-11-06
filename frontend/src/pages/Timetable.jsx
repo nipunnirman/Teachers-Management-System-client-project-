@@ -1,3 +1,4 @@
+import { tr } from '../utils/i18n'
 import { useEffect, useState } from 'react'
 import AppLayout from '../components/layout/AppLayout'
 import { Modal, PageLoader, EmptyState } from '../components/common'
@@ -5,6 +6,7 @@ import { timetableAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Plus, Trash2 } from 'lucide-react'
+import { DAY_LABELS, DAY_LABELS_SHORT, periodLabel } from '../utils/locale'
 
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const PERIODS = [1,2,3,4,5,6,7,8]
@@ -50,7 +52,7 @@ export default function Timetable() {
         }
       })
       setWeekly(w)
-    } catch { toast.error('Failed to load timetable') }
+    } catch { toast.error(tr('කාලසටහන ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
 
@@ -58,22 +60,22 @@ export default function Timetable() {
   useEffect(() => { if (isAdmin) teacherAPI.getAll().then(r => setTeachers(r.data.teachers)).catch(()=>{}) }, [isAdmin])
 
   const handleCreate = async () => {
-    if (!form.subject || !form.className) return toast.error('Fill all required fields')
+    if (!form.subject || !form.className) return toast.error(tr('අවශ්‍ය සියලු තොරතුරු ඇතුළත් කරන්න'))
     setSaving(true)
     try {
       await timetableAPI.create({ ...form, academicYear })
-      toast.success('Entry added'); setModalOpen(false); load()
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed — check for conflicts') }
+      toast.success(tr('පන්තිය එක් කරන ලදී')); setModalOpen(false); load()
+    } catch (err) { toast.error(err.response?.data?.message || tr('අසාර්ථක විය — කාල ගැටුම් පරීක්ෂා කරන්න')) }
     finally { setSaving(false) }
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Remove this entry?')) return
-    try { await timetableAPI.remove(id); toast.success('Removed'); load() }
-    catch { toast.error('Failed') }
+    if (!confirm(tr('මෙම පන්තිය ඉවත් කරන්නද?'))) return
+    try { await timetableAPI.remove(id); toast.success(tr('ඉවත් කරන ලදී')); load() }
+    catch { toast.error(tr('අසාර්ථක විය')) }
   }
 
-  if (loading) return <AppLayout title="Timetable"><PageLoader /></AppLayout>
+  if (loading) return <AppLayout title={tr('කාලසටහන')}><PageLoader /></AppLayout>
 
   // Classes for the current mobile day tab, in period order
   const dayClasses = PERIODS.flatMap(p => weekly[activeDay]?.[p] || [])
@@ -83,22 +85,22 @@ export default function Timetable() {
   }
 
   return (
-    <AppLayout title="Timetable">
+    <AppLayout title={tr('කාලසටහන')}>
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">{isAdmin ? 'Timetable Management' : 'My Timetable'}</h1>
-          <p className="page-subtitle">Academic Year {academicYear}</p>
+          <h1 className="page-title">{isAdmin ? tr('කාලසටහන් කළමනාකරණය') : tr('මගේ කාලසටහන')}</h1>
+          <p className="page-subtitle">{tr('අධ්‍යයන වර්ෂය {year}', { year: academicYear })}</p>
         </div>
         <div className="page-header-actions">
           {isAdmin && (
-            <select className="form-select" aria-label="Filter by teacher" value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}>
-              <option value="">All Teachers</option>
+            <select className="form-select" aria-label={tr('ගුරුවරයා අනුව පෙරන්න')} value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}>
+              <option value="">{tr('සියලු ගුරුවරු')}</option>
               {teachers.map(t => <option key={t._id} value={t._id}>{t.user?.name}</option>)}
             </select>
           )}
           {isAdmin && (
             <button className="btn btn-primary" onClick={() => openAddFor(activeDay, form.period)}>
-              <Plus size={15}/> Add Entry
+              <Plus size={15}/> {tr('පන්තියක් එක් කරන්න')}
             </button>
           )}
         </div>
@@ -110,8 +112,8 @@ export default function Timetable() {
           <table>
             <thead>
               <tr>
-                <th className="tt-period">Period</th>
-                {DAYS.map(d => <th key={d}>{d}</th>)}
+                <th className="tt-period">{tr('කාලච්ඡේදය')}</th>
+                {DAYS.map(d => <th key={d}>{DAY_LABELS[d]}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -131,18 +133,18 @@ export default function Timetable() {
                                 {isAdmin && <div className="tt-meta">{e.teacher?.user?.name}</div>}
                                 <div className="tt-meta">{e.startTime}–{e.endTime}</div>
                                 {isAdmin && (
-                                  <button className="tt-delete" onClick={() => handleDelete(e._id)} aria-label={`Remove ${e.subject}`}>
+                                  <button className="tt-delete" onClick={() => handleDelete(e._id)} aria-label={tr('{subject} ඉවත් කරන්න', { subject: e.subject })}>
                                     <Trash2 size={13}/>
                                   </button>
                                 )}
                               </div>
                             ))}
                             {isAdmin && (
-                              <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={`Add class on ${d}, period ${p}`}><Plus size={14}/></button>
+                              <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={tr('{day}, {period} සඳහා පන්තියක් එක් කරන්න', { day: DAY_LABELS[d], period: periodLabel(p) })}><Plus size={14}/></button>
                             )}
                           </div>
                         ) : isAdmin && (
-                          <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={`Add class on ${d}, period ${p}`}><Plus size={15}/></button>
+                          <button className="tt-add" onClick={() => openAddFor(d, p)} aria-label={tr('{day}, {period} සඳහා පන්තියක් එක් කරන්න', { day: DAY_LABELS[d], period: periodLabel(p) })}><Plus size={15}/></button>
                         )}
                       </td>
                     )
@@ -160,19 +162,19 @@ export default function Timetable() {
           {DAYS.map(d => (
             <button key={d} onClick={() => setActiveDay(d)}
               className={`filter-pill${activeDay===d ? ' active' : ''}`}>
-              {d.slice(0,3)}
+              {DAY_LABELS_SHORT[d]}
             </button>
           ))}
         </div>
 
         <div className="card">
           {dayClasses.length === 0 ? (
-            <EmptyState message={`No classes on ${activeDay}`} />
+            <EmptyState message={tr('{day} දිනට පන්ති නොමැත', { day: DAY_LABELS[activeDay] })} />
           ) : (
             <div className="schedule-list">
               {dayClasses.map(e => (
                 <div key={e._id} className="schedule-row">
-                  <span className="period-chip" title={`Period ${e.period}`}>P{e.period}</span>
+                  <span className="period-chip" title={periodLabel(e.period)}>{e.period}</span>
                   <div className="schedule-main">
                     <div className="schedule-subject">{e.subject}</div>
                     <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
@@ -180,7 +182,7 @@ export default function Timetable() {
                     <div className="schedule-meta">{e.startTime} – {e.endTime}</div>
                   </div>
                   {isAdmin && (
-                    <button className="notif-delete" onClick={() => handleDelete(e._id)} aria-label={`Remove ${e.subject}`}>
+                    <button className="notif-delete" onClick={() => handleDelete(e._id)} aria-label={tr('{subject} ඉවත් කරන්න', { subject: e.subject })}>
                       <Trash2 size={16}/>
                     </button>
                   )}
@@ -191,56 +193,56 @@ export default function Timetable() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Timetable Entry"
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={tr('පන්තියක් එක් කිරීම')}
         footer={<>
-          <button className="btn btn-ghost" onClick={() => setModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>{saving ? 'Saving…' : 'Add Entry'}</button>
+          <button className="btn btn-ghost" onClick={() => setModalOpen(false)}>{tr('අවලංගු කරන්න')}</button>
+          <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>{saving ? tr('සුරකිමින්…') : tr('එක් කරන්න')}</button>
         </>}>
         {isAdmin && (
           <div className="form-group">
-            <label className="form-label">Teacher *</label>
+            <label className="form-label">{tr('ගුරුවරයා *')}</label>
             <select className="form-select" value={form.teacher} onChange={e => setForm(f=>({...f,teacher:e.target.value}))}>
-              <option value="">Select teacher…</option>
+              <option value="">{tr('ගුරුවරයා තෝරන්න…')}</option>
               {teachers.map(t => <option key={t._id} value={t._id}>{t.user?.name}</option>)}
             </select>
           </div>
         )}
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Subject *</label>
-            <input className="form-input" placeholder="Mathematics" value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))}/>
+            <label className="form-label">{tr('විෂය *')}</label>
+            <input className="form-input" placeholder={tr('ගණිතය')} value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))}/>
           </div>
           <div className="form-group">
-            <label className="form-label">Class *</label>
-            <input className="form-input" placeholder="Grade 10A" value={form.className} onChange={e => setForm(f=>({...f,className:e.target.value}))}/>
+            <label className="form-label">{tr('පන්තිය *')}</label>
+            <input className="form-input" placeholder="10 A" value={form.className} onChange={e => setForm(f=>({...f,className:e.target.value}))}/>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Grade</label>
-            <input className="form-input" placeholder="Grade 10" value={form.grade} onChange={e => setForm(f=>({...f,grade:e.target.value}))}/>
+            <label className="form-label">{tr('ශ්‍රේණිය')}</label>
+            <input className="form-input" placeholder={tr('10 ශ්‍රේණිය')} value={form.grade} onChange={e => setForm(f=>({...f,grade:e.target.value}))}/>
           </div>
           <div className="form-group">
-            <label className="form-label">Day</label>
+            <label className="form-label">{tr('සතියේ දිනය')}</label>
             <select className="form-select" value={form.day} onChange={e => setForm(f=>({...f,day:e.target.value}))}>
-              {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+              {DAYS.map(d => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Period</label>
+            <label className="form-label">{tr('කාලච්ඡේදය')}</label>
             <select className="form-select" value={form.period} onChange={e => setForm(f=>({...f,period:+e.target.value}))}>
-              {PERIODS.map(p => <option key={p} value={p}>Period {p}</option>)}
+              {PERIODS.map(p => <option key={p} value={p}>{periodLabel(p)}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Start Time</label>
+            <label className="form-label">{tr('ආරම්භක වේලාව')}</label>
             <input className="form-input" type="time" value={form.startTime} onChange={e => setForm(f=>({...f,startTime:e.target.value}))}/>
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">End Time</label>
+          <label className="form-label">{tr('අවසන් වේලාව')}</label>
           <input className="form-input" type="time" value={form.endTime} onChange={e => setForm(f=>({...f,endTime:e.target.value}))}/>
         </div>
       </Modal>

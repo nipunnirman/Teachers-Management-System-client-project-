@@ -28,7 +28,7 @@ const register = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully.',
+      message: 'පරිශීලකයා සාර්ථකව ලියාපදිංචි විය.',
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
@@ -45,16 +45,16 @@ const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+      return res.status(400).json({ success: false, message: 'ඊමේල් ලිපිනය සහ මුරපදය අවශ්‍යයි.' });
     }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+      return res.status(401).json({ success: false, message: 'ඊමේල් ලිපිනය හෝ මුරපදය වැරදියි.' });
     }
 
     if (!user.isActive) {
-      return res.status(401).json({ success: false, message: 'Account has been deactivated.' });
+      return res.status(401).json({ success: false, message: 'මෙම ගිණුම අක්‍රීය කර ඇත.' });
     }
 
     // Log login history
@@ -67,7 +67,7 @@ const login = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Login successful.',
+      message: 'පිවිසීම සාර්ථකයි.',
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
@@ -95,7 +95,7 @@ const forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(404).json({ success: false, message: 'No user found with that email.' });
+      return res.status(404).json({ success: false, message: 'එම ඊමේල් ලිපිනය සහිත පරිශීලකයෙකු හමු නොවීය.' });
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -107,14 +107,14 @@ const forgotPassword = async (req, res, next) => {
 
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset Request',
-      html: `<p>Hi ${user.name},</p>
-             <p>You requested a password reset. Click the link below to reset your password:</p>
+      subject: 'මුරපදය යළි සැකසීමේ ඉල්ලීම',
+      html: `<p>${user.name} මහත්මයාණෙනි / මහත්මියනි,</p>
+             <p>ඔබ මුරපදය යළි සැකසීමට ඉල්ලා ඇත. එය සැකසීමට පහත සබැඳිය ක්ලික් කරන්න:</p>
              <a href="${resetURL}">${resetURL}</a>
-             <p>This link expires in 10 minutes. If you did not request this, please ignore this email.</p>`,
+             <p>මෙම සබැඳිය මිනිත්තු 10කින් කල් ඉකුත් වේ. ඔබ මෙය ඉල්ලා නොමැති නම්, කරුණාකර මෙම ඊමේල් පණිවිඩය නොසලකා හරින්න.</p>`,
     });
 
-    res.status(200).json({ success: true, message: 'Password reset email sent.' });
+    res.status(200).json({ success: true, message: 'මුරපදය යළි සැකසීමේ ඊමේල් පණිවිඩය යවන ලදී.' });
   } catch (error) {
     next(error);
   }
@@ -133,7 +133,7 @@ const resetPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(400).json({ success: false, message: 'Token is invalid or has expired.' });
+      return res.status(400).json({ success: false, message: 'සබැඳිය වලංගු නැත හෝ කල් ඉකුත් වී ඇත.' });
     }
 
     user.password = req.body.password;
@@ -142,7 +142,7 @@ const resetPassword = async (req, res, next) => {
     await user.save();
 
     const token = generateToken(user._id);
-    res.status(200).json({ success: true, message: 'Password reset successful.', token });
+    res.status(200).json({ success: true, message: 'මුරපදය සාර්ථකව යළි සකසන ලදී.', token });
   } catch (error) {
     next(error);
   }
@@ -155,11 +155,11 @@ const adminResetPassword = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'පරිශීලකයා හමු නොවීය.' });
     }
     user.password = req.body.newPassword;
     await user.save();
-    res.status(200).json({ success: true, message: 'Password updated successfully.' });
+    res.status(200).json({ success: true, message: 'මුරපදය සාර්ථකව යාවත්කාලීන විය.' });
   } catch (error) {
     next(error);
   }

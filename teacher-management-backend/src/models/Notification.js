@@ -15,6 +15,9 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // English copies, so each person sees notifications in their own language.
+    titleEn: String,
+    messageEn: String,
     type: {
       type: String,
       enum: ['attendance', 'leave', 'salary', 'timetable', 'announcement', 'general'],

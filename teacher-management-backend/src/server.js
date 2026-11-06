@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const { localizeResponses } = require('./utils/sinhala');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -26,6 +27,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(localizeResponses);
 
 // Request logger (development only)
 if (process.env.NODE_ENV === 'development') {

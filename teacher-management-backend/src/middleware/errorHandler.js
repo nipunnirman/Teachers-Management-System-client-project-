@@ -1,11 +1,11 @@
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
+  let message = err.message || 'සේවාදායක දෝෂයක් ඇති විය.';
 
   // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.`;
+    message = field === 'email' ? 'මෙම ඊමේල් ලිපිනය දැනටමත් භාවිතයේ ඇත.' : 'මෙම තොරතුර දැනටමත් පවතී.';
     statusCode = 400;
   }
 
@@ -17,18 +17,18 @@ const errorHandler = (err, req, res, next) => {
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    message = 'Invalid token.';
+    message = 'ප්‍රවේශ යතුර වලංගු නැත.';
     statusCode = 401;
   }
 
   if (err.name === 'TokenExpiredError') {
-    message = 'Token expired. Please log in again.';
+    message = 'සැසිය කල් ඉකුත් වී ඇත. කරුණාකර නැවත පිවිසෙන්න.';
     statusCode = 401;
   }
 
   // Mongoose CastError (invalid ObjectId)
   if (err.name === 'CastError') {
-    message = `Resource not found.`;
+    message = 'අදාළ තොරතුර හමු නොවීය.';
     statusCode = 404;
   }
 

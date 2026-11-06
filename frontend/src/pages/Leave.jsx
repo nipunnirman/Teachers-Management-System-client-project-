@@ -1,3 +1,4 @@
+import { tr } from '../utils/i18n'
 import { useEffect, useState } from 'react'
 import AppLayout from '../components/layout/AppLayout'
 import { Modal, PageLoader, EmptyState, Badge } from '../components/common'
@@ -5,11 +6,12 @@ import { leaveAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Plus, CheckCircle, XCircle } from 'lucide-react'
+import { LEAVE_TYPE_LABELS, STATUS_LABELS, formatDate } from '../utils/locale'
 
 const LEAVE_TYPES = ['annual','sick','casual','maternity','paternity','unpaid','other']
 
 function fmt(d) {
-  return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+  return formatDate(d)
 }
 
 export default function Leave() {
@@ -29,21 +31,21 @@ export default function Leave() {
       const params = filter !== 'all' ? { status: filter } : {}
       const { data } = await leaveAPI.getAll(params)
       setLeaves(data.leaves)
-    } catch { toast.error('Failed to load leaves') }
+    } catch { toast.error(tr('නිවාඩු දත්ත ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [filter])
 
   const handleApply = async () => {
-    if (!form.startDate || !form.endDate || !form.reason) return toast.error('Fill all required fields')
+    if (!form.startDate || !form.endDate || !form.reason) return toast.error(tr('අවශ්‍ය සියලු තොරතුරු ඇතුළත් කරන්න'))
     setSaving(true)
     try {
       await leaveAPI.apply(form)
-      toast.success('Leave request submitted')
+      toast.success(tr('නිවාඩු ඉල්ලීම යවන ලදී'))
       setApplyModal(false)
       setForm({ leaveType:'annual', startDate:'', endDate:'', reason:'' })
       load()
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed') }
+    } catch (err) { toast.error(err.response?.data?.message || tr('අසාර්ථක විය')) }
     finally { setSaving(false) }
   }
 
@@ -51,32 +53,32 @@ export default function Leave() {
     setSaving(true)
     try {
       await leaveAPI.review(reviewModal._id, { status, reviewNote })
-      toast.success(`Leave ${status}`)
+      toast.success(status === 'approved' ? tr('නිවාඩුව අනුමත කරන ලදී') : tr('නිවාඩුව ප්‍රතික්ෂේප කරන ලදී'))
       setReviewModal(null); setReviewNote(''); load()
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed') }
+    } catch (err) { toast.error(err.response?.data?.message || tr('අසාර්ථක විය')) }
     finally { setSaving(false) }
   }
 
   const handleCancel = async (id) => {
-    if (!confirm('Cancel this leave request?')) return
-    try { await leaveAPI.cancel(id); toast.success('Cancelled'); load() }
-    catch { toast.error('Failed to cancel') }
+    if (!confirm(tr('මෙම නිවාඩු ඉල්ලීම අවලංගු කරන්නද?'))) return
+    try { await leaveAPI.cancel(id); toast.success(tr('අවලංගු කරන ලදී')); load() }
+    catch { toast.error(tr('අවලංගු කිරීමට නොහැකි විය')) }
   }
 
   const FILTERS = ['all','pending','approved','rejected','cancelled']
-  if (loading) return <AppLayout title="Leave"><PageLoader /></AppLayout>
+  if (loading) return <AppLayout title={tr('නිවාඩු')}><PageLoader /></AppLayout>
 
   return (
-    <AppLayout title="Leave Management">
+    <AppLayout title={tr('නිවාඩු කළමනාකරණය')}>
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">{isAdmin ? 'Leave Management' : 'My Leave Requests'}</h1>
-          <p className="page-subtitle">{leaves.length} total requests</p>
+          <h1 className="page-title">{isAdmin ? tr('නිවාඩු කළමනාකරණය') : tr('මගේ නිවාඩු ඉල්ලීම්')}</h1>
+          <p className="page-subtitle">{tr('ඉල්ලීම් {count}', { count: leaves.length })}</p>
         </div>
         {!isAdmin && (
           <div className="page-header-actions">
             <button className="btn btn-primary" onClick={() => setApplyModal(true)}>
-              <Plus size={15}/> Apply for Leave
+              <Plus size={15}/> {tr('නිවාඩු ඉල්ලන්න')}
             </button>
           </div>
         )}
@@ -87,7 +89,7 @@ export default function Leave() {
         {FILTERS.map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`filter-pill${filter===f ? ' active' : ''}`}>
-            {f.charAt(0).toUpperCase()+f.slice(1)}
+            {STATUS_LABELS[f]}
           </button>
         ))}
       </div>
@@ -95,13 +97,13 @@ export default function Leave() {
       <div className="card">
         {/* DESKTOP TABLE */}
         <div className="table-wrap">
-          {leaves.length === 0 ? <EmptyState message="No leave requests" /> : (
+          {leaves.length === 0 ? <EmptyState message={tr('නිවාඩු ඉල්ලීම් නොමැත')} /> : (
             <table>
               <thead>
                 <tr>
-                  {isAdmin && <th>Teacher</th>}
-                  <th>Type</th><th>From</th><th>To</th>
-                  <th>Days</th><th>Status</th><th>Reason</th><th>Actions</th>
+                  {isAdmin && <th>{tr('ගුරුවරයා')}</th>}
+                  <th>{tr('වර්ගය')}</th><th>{tr('සිට')}</th><th>{tr('දක්වා')}</th>
+                  <th>{tr('දින')}</th><th>{tr('තත්ත්වය')}</th><th>{tr('හේතුව')}</th><th>{tr('ක්‍රියා')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,19 +115,19 @@ export default function Leave() {
                         <div className="text-sm text-muted">{l.teacher?.teacherId}</div>
                       </td>
                     )}
-                    <td><span className="badge badge-blue" style={{ textTransform:'capitalize' }}>{l.leaveType}</span></td>
+                    <td><span className="badge badge-blue">{LEAVE_TYPE_LABELS[l.leaveType] || l.leaveType}</span></td>
                     <td>{fmt(l.startDate)}</td>
                     <td>{fmt(l.endDate)}</td>
-                    <td style={{ fontWeight:600 }}>{l.totalDays}d</td>
+                    <td style={{ fontWeight:600 }}>{tr('දින {days}', { days: l.totalDays })}</td>
                     <td><Badge status={l.status}/></td>
                     <td style={{ maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text-2)' }}>{l.reason}</td>
                     <td>
                       <div style={{ display:'flex', gap:6 }}>
                         {isAdmin && l.status==='pending' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>Review</button>
+                          <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>{tr('පරීක්ෂා කරන්න')}</button>
                         )}
                         {!isAdmin && l.status==='pending' && (
-                          <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>Cancel</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>{tr('අවලංගු කරන්න')}</button>
                         )}
                       </div>
                     </td>
@@ -138,37 +140,37 @@ export default function Leave() {
 
         {/* MOBILE CARD LIST */}
         <div className="mobile-list">
-          {leaves.length === 0 ? <EmptyState message="No leave requests" /> : (
+          {leaves.length === 0 ? <EmptyState message={tr('නිවාඩු ඉල්ලීම් නොමැත')} /> : (
             leaves.map(l => (
               <div key={l._id} className="mobile-card-item">
                 <div className="mobile-card-header">
                   <div>
                     {isAdmin && <div className="mobile-card-title">{l.teacher?.user?.name}</div>}
-                    <div className="mobile-card-sub" style={{ textTransform:'capitalize' }}>
-                      {l.leaveType} leave · {l.totalDays} day{l.totalDays!==1?'s':''}
+                    <div className="mobile-card-sub">
+                      {tr('{type} නිවාඩු · දින {days}', { type: LEAVE_TYPE_LABELS[l.leaveType] || l.leaveType, days: l.totalDays })}
                     </div>
                   </div>
                   <Badge status={l.status}/>
                 </div>
                 <div className="mobile-card-row">
-                  <span className="mobile-card-label">From</span>
+                  <span className="mobile-card-label">{tr('සිට')}</span>
                   <span className="mobile-card-value">{fmt(l.startDate)}</span>
                 </div>
                 <div className="mobile-card-row">
-                  <span className="mobile-card-label">To</span>
+                  <span className="mobile-card-label">{tr('දක්වා')}</span>
                   <span className="mobile-card-value">{fmt(l.endDate)}</span>
                 </div>
                 <div className="mobile-card-row">
-                  <span className="mobile-card-label">Reason</span>
+                  <span className="mobile-card-label">{tr('හේතුව')}</span>
                   <span className="mobile-card-value" style={{ overflowWrap:'anywhere' }}>{l.reason}</span>
                 </div>
                 {(isAdmin && l.status==='pending') || (!isAdmin && l.status==='pending') ? (
                   <div className="mobile-card-actions">
                     {isAdmin && l.status==='pending' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>Review</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>{tr('පරීක්ෂා කරන්න')}</button>
                     )}
                     {!isAdmin && l.status==='pending' && (
-                      <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>Cancel</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>{tr('අවලංගු කරන්න')}</button>
                     )}
                   </div>
                 ) : null}
@@ -179,58 +181,58 @@ export default function Leave() {
       </div>
 
       {/* Apply Modal */}
-      <Modal open={applyModal} onClose={() => setApplyModal(false)} title="Apply for Leave"
+      <Modal open={applyModal} onClose={() => setApplyModal(false)} title={tr('නිවාඩු ඉල්ලීම')}
         footer={<>
-          <button className="btn btn-ghost" onClick={() => setApplyModal(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleApply} disabled={saving}>{saving ? 'Submitting…' : 'Submit Request'}</button>
+          <button className="btn btn-ghost" onClick={() => setApplyModal(false)}>{tr('අවලංගු කරන්න')}</button>
+          <button className="btn btn-primary" onClick={handleApply} disabled={saving}>{saving ? tr('යවමින්…') : tr('ඉල්ලීම යවන්න')}</button>
         </>}>
         <div className="form-group">
-          <label className="form-label">Leave Type *</label>
+          <label className="form-label">{tr('නිවාඩු වර්ගය *')}</label>
           <select className="form-select" value={form.leaveType} onChange={e => setForm(f=>({...f,leaveType:e.target.value}))}>
-            {LEAVE_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
+            {LEAVE_TYPES.map(t => <option key={t} value={t}>{LEAVE_TYPE_LABELS[t]}</option>)}
           </select>
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Start Date *</label>
+            <label className="form-label">{tr('ආරම්භක දිනය *')}</label>
             <input className="form-input" type="date" value={form.startDate} onChange={e => setForm(f=>({...f,startDate:e.target.value}))} />
           </div>
           <div className="form-group">
-            <label className="form-label">End Date *</label>
+            <label className="form-label">{tr('අවසන් දිනය *')}</label>
             <input className="form-input" type="date" value={form.endDate} onChange={e => setForm(f=>({...f,endDate:e.target.value}))} />
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">Reason *</label>
-          <textarea className="form-textarea" placeholder="Briefly describe your reason…" value={form.reason} onChange={e => setForm(f=>({...f,reason:e.target.value}))} />
+          <label className="form-label">{tr('හේතුව *')}</label>
+          <textarea className="form-textarea" placeholder={tr('හේතුව කෙටියෙන් සඳහන් කරන්න…')} value={form.reason} onChange={e => setForm(f=>({...f,reason:e.target.value}))} />
         </div>
       </Modal>
 
       {/* Review Modal */}
       {reviewModal && (
-        <Modal open={!!reviewModal} onClose={() => setReviewModal(null)} title="Review Leave Request"
+        <Modal open={!!reviewModal} onClose={() => setReviewModal(null)} title={tr('නිවාඩු ඉල්ලීම පරීක්ෂා කිරීම')}
           footer={<>
-            <button className="btn btn-ghost" onClick={() => setReviewModal(null)}>Cancel</button>
-            <button className="btn btn-danger" onClick={() => handleReview('rejected')} disabled={saving}><XCircle size={14}/> Reject</button>
-            <button className="btn btn-primary" onClick={() => handleReview('approved')} disabled={saving}><CheckCircle size={14}/> Approve</button>
+            <button className="btn btn-ghost" onClick={() => setReviewModal(null)}>{tr('වසන්න')}</button>
+            <button className="btn btn-danger" onClick={() => handleReview('rejected')} disabled={saving}><XCircle size={14}/> {tr('ප්‍රතික්ෂේප')}</button>
+            <button className="btn btn-primary" onClick={() => handleReview('approved')} disabled={saving}><CheckCircle size={14}/> {tr('අනුමත')}</button>
           </>}>
           <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
             {[
-              ['Teacher', reviewModal.teacher?.user?.name],
-              ['Type',    reviewModal.leaveType],
-              ['Period',  `${fmt(reviewModal.startDate)} → ${fmt(reviewModal.endDate)}`],
-              ['Days',    reviewModal.totalDays],
-              ['Reason',  reviewModal.reason],
+              [tr('ගුරුවරයා'), reviewModal.teacher?.user?.name],
+              [tr('වර්ගය'),    LEAVE_TYPE_LABELS[reviewModal.leaveType] || reviewModal.leaveType],
+              [tr('කාලය'),  `${fmt(reviewModal.startDate)} → ${fmt(reviewModal.endDate)}`],
+              [tr('දින'),    reviewModal.totalDays],
+              [tr('හේතුව'),  reviewModal.reason],
             ].map(([k,v]) => (
               <div key={k} className="detail-row">
                 <span className="text-muted">{k}</span>
-                <span style={{ textTransform: k === 'Type' ? 'capitalize' : 'none' }}>{v}</span>
+                <span>{v}</span>
               </div>
             ))}
           </div>
           <div className="form-group">
-            <label className="form-label">Note (optional)</label>
-            <textarea className="form-textarea" placeholder="Add a note for the teacher…" value={reviewNote} onChange={e => setReviewNote(e.target.value)} style={{ minHeight:70 }} />
+            <label className="form-label">{tr('සටහන (අවශ්‍ය නම්)')}</label>
+            <textarea className="form-textarea" placeholder={tr('ගුරුවරයා සඳහා සටහනක් එක් කරන්න…')} value={reviewNote} onChange={e => setReviewNote(e.target.value)} style={{ minHeight:70 }} />
           </div>
         </Modal>
       )}

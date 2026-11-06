@@ -38,7 +38,7 @@ const getTeacher = async (req, res, next) => {
   try {
     const teacher = await Teacher.findById(req.params.id).populate('user', 'name email role isActive lastLogin');
     if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher not found.' });
+      return res.status(404).json({ success: false, message: 'ගුරුවරයා හමු නොවීය.' });
     }
     res.status(200).json({ success: true, teacher });
   } catch (error) {
@@ -53,7 +53,7 @@ const getMyProfile = async (req, res, next) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id }).populate('user', 'name email role');
     if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found.' });
+      return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
     }
     res.status(200).json({ success: true, teacher });
   } catch (error) {
@@ -68,7 +68,7 @@ const updateTeacher = async (req, res, next) => {
   try {
     const teacher = await Teacher.findById(req.params.id);
     if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher not found.' });
+      return res.status(404).json({ success: false, message: 'ගුරුවරයා හමු නොවීය.' });
     }
 
     // Teachers can only update limited fields
@@ -88,7 +88,7 @@ const updateTeacher = async (req, res, next) => {
     Object.assign(teacher, allowedUpdates);
     await teacher.save();
 
-    res.status(200).json({ success: true, message: 'Teacher updated successfully.', teacher });
+    res.status(200).json({ success: true, message: 'ගුරු තොරතුරු සාර්ථකව යාවත්කාලීන විය.', teacher });
   } catch (error) {
     next(error);
   }
@@ -101,14 +101,14 @@ const deleteTeacher = async (req, res, next) => {
   try {
     const teacher = await Teacher.findById(req.params.id);
     if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher not found.' });
+      return res.status(404).json({ success: false, message: 'ගුරුවරයා හමු නොවීය.' });
     }
 
     // Deactivate user instead of hard delete (preserves audit trail)
     await User.findByIdAndUpdate(teacher.user, { isActive: false });
     await teacher.deleteOne();
 
-    res.status(200).json({ success: true, message: 'Teacher removed successfully.' });
+    res.status(200).json({ success: true, message: 'ගුරුවරයා සාර්ථකව ඉවත් කරන ලදී.' });
   } catch (error) {
     next(error);
   }

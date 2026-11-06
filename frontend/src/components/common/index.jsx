@@ -1,6 +1,8 @@
+import { tr } from '../../utils/i18n'
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Inbox } from 'lucide-react';
+import { STATUS_LABELS } from '../../utils/locale';
 
 export function Modal({ open, onClose, title, children, footer }) {
   useEffect(() => {
@@ -16,7 +18,7 @@ export function Modal({ open, onClose, title, children, footer }) {
       <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label={tr('වසන්න')}><X size={18} /></button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
@@ -34,7 +36,7 @@ export function PageLoader() {
   return <div className="page-loader"><Spinner size={28} /></div>;
 }
 
-export function EmptyState({ message = 'No data found', sub }) {
+export function EmptyState({ message = tr('දත්ත හමු නොවීය'), sub }) {
   return (
     <div className="empty-state">
       <Inbox size={40} strokeWidth={1.5} />
@@ -56,26 +58,14 @@ export function StatCard({ label, value, sub, accent = 'gold', icon: Icon }) {
 }
 
 export function Badge({ status }) {
-  const map = {
-    present: ['badge-green', 'Present'],
-    absent:  ['badge-red',   'Absent'],
-    late:    ['badge-amber', 'Late'],
-    'half-day': ['badge-blue', 'Half Day'],
-    approved: ['badge-green', 'Approved'],
-    rejected: ['badge-red',   'Rejected'],
-    pending:  ['badge-amber', 'Pending'],
-    cancelled:['badge-gray',  'Cancelled'],
-    paid:     ['badge-green', 'Paid'],
-    processed:['badge-blue',  'Processed'],
-    draft:    ['badge-gray',  'Draft'],
-    permanent:['badge-gold',  'Permanent'],
-    temporary:['badge-amber', 'Temporary'],
-    'part-time':['badge-blue','Part-time'],
-    active:   ['badge-green', 'Active'],
-    inactive: ['badge-red',   'Inactive'],
-    holiday:  ['badge-blue',  'Holiday'],
-    weekend:  ['badge-gray',  'Weekend'],
+  const tone = {
+    present: 'badge-green', absent: 'badge-red', late: 'badge-amber', 'half-day': 'badge-blue',
+    approved: 'badge-green', rejected: 'badge-red', pending: 'badge-amber', cancelled: 'badge-gray',
+    paid: 'badge-green', processed: 'badge-blue', draft: 'badge-gray',
+    permanent: 'badge-gold', temporary: 'badge-amber', 'part-time': 'badge-blue',
+    active: 'badge-green', inactive: 'badge-red', holiday: 'badge-blue', weekend: 'badge-gray',
   };
-  const [cls, label] = map[status] || ['badge-gray', status];
+  const cls = tone[status] || 'badge-gray';
+  const label = STATUS_LABELS[status] || status;
   return <span className={`badge ${cls}`}>{label}</span>;
 }

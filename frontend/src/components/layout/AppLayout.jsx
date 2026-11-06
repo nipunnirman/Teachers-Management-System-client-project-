@@ -3,12 +3,13 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import BottomNav from './BottomNav';
 import { useUnreadCount } from './useUnreadCount';
+import { APP_NAME } from '../../utils/locale';
 
 export default function AppLayout({ title, children }) {
   const unread = useUnreadCount();
 
   useEffect(() => {
-    document.title = title ? `${title} · Teachers Management System` : 'Teachers Management System';
+    document.title = title ? `${title} · ${APP_NAME}` : APP_NAME;
   }, [title]);
 
   return (

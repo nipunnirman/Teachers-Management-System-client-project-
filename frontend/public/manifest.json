@@ -1,8 +1,9 @@
 {
   "id": "/",
-  "short_name": "Teachers MS",
-  "name": "Teachers Management System",
-  "description": "Teacher dashboard and attendance scanner system.",
+  "short_name": "ගුරු පද්ධතිය",
+  "name": "ගුරු කළමනාකරණ පද්ධතිය",
+  "description": "ගුරු තොරතුරු, පැමිණීම, නිවාඩු සහ කාලසටහන් කළමනාකරණ පද්ධතිය.",
+  "lang": "si",
   "icons": [
     { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
     { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },

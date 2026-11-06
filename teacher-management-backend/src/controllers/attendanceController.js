@@ -1,3 +1,4 @@
+const { timeLabel, timeLabelEn } = require('../utils/sinhala');
 const Attendance = require('../models/Attendance');
 const Teacher = require('../models/Teacher');
 const Notification = require('../models/Notification');
@@ -19,7 +20,7 @@ const markAttendance = async (req, res, next) => {
       { upsert: true, new: true, runValidators: true }
     );
 
-    res.status(200).json({ success: true, message: 'Attendance marked.', attendance });
+    res.status(200).json({ success: true, message: 'පැමිණීම සටහන් විය.', attendance });
   } catch (error) {
     next(error);
   }
@@ -60,7 +61,7 @@ const getAttendance = async (req, res, next) => {
 const getMyAttendance = async (req, res, next) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id });
-    if (!teacher) return res.status(404).json({ success: false, message: 'Teacher profile not found.' });
+    if (!teacher) return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
 
     const { month, year } = req.query;
     const filter = { teacher: teacher._id };
@@ -100,9 +101,9 @@ const editAttendance = async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
-    if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found.' });
+    if (!attendance) return res.status(404).json({ success: false, message: 'පැමිණීමේ වාර්තාව හමු නොවීය.' });
 
-    res.status(200).json({ success: true, message: 'Attendance updated.', attendance });
+    res.status(200).json({ success: true, message: 'පැමිණීම යාවත්කාලීන විය.', attendance });
   } catch (error) {
     next(error);
   }
@@ -167,18 +168,18 @@ const scanQRAndMark = async (req, res, next) => {
   try {
     const { token } = req.body;
     if (!token) {
-      return res.status(400).json({ success: false, message: 'QR token is required.' });
+      return res.status(400).json({ success: false, message: 'QR කේතය අවශ්‍යයි.' });
     }
 
     const expectedToken = generateDailyToken();
     if (token !== expectedToken) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired QR code.' });
+      return res.status(400).json({ success: false, message: 'QR කේතය වලංගු නැත හෝ කල් ඉකුත් වී ඇත.' });
     }
 
     // Find the teacher profile associated with logged in user
     const teacher = await Teacher.findOne({ user: req.user.id });
     if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found for this user.' });
+      return res.status(404).json({ success: false, message: 'මෙම පරිශීලකයාට ගුරු පැතිකඩක් හමු නොවීය.' });
     }
 
     const today = new Date();
@@ -197,20 +198,22 @@ const scanQRAndMark = async (req, res, next) => {
         // Create a notification for the teacher
         await Notification.create({
           recipient: req.user.id,
-          title: 'Check-out Recorded',
-          message: `Your check-out has been recorded at ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} via QR scan.`,
+          title: 'පිටවීම සටහන් විය',
+          titleEn: 'Check-out Recorded',
+          message: `QR ස්කෑන් මගින් ඔබගේ පිටවීම ${timeLabel(today)} ට සටහන් විය.`,
+          messageEn: `Your check-out has been recorded at ${timeLabelEn(today)} via QR scan.`,
           type: 'attendance'
         });
 
         return res.status(200).json({
           success: true,
-          message: 'Check-out marked successfully via QR scan.',
+          message: 'QR ස්කෑන් මගින් පිටවීම සාර්ථකව සටහන් විය.',
           attendance
         });
       } else {
         return res.status(200).json({
           success: true,
-          message: 'You have already checked in and checked out for today.',
+          message: 'ඔබ අද පැමිණීම සහ පිටවීම දැනටමත් සටහන් කර ඇත.',
           attendance
         });
       }
@@ -223,20 +226,22 @@ const scanQRAndMark = async (req, res, next) => {
       status: 'present',
       checkIn: today,
       markedBy: req.user.id,
-      notes: 'Checked in via QR scan'
+      notes: 'QR ස්කෑන් මගින් පැමිණීම සටහන් විය'
     });
 
     // Create a notification for the teacher
     await Notification.create({
       recipient: req.user.id,
-      title: 'Check-in Recorded',
-      message: `Your check-in has been recorded at ${today.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} via QR scan.`,
+      title: 'පැමිණීම සටහන් විය',
+      titleEn: 'Check-in Recorded',
+      message: `QR ස්කෑන් මගින් ඔබගේ පැමිණීම ${timeLabel(today)} ට සටහන් විය.`,
+      messageEn: `Your check-in has been recorded at ${timeLabelEn(today)} via QR scan.`,
       type: 'attendance'
     });
 
     res.status(200).json({
       success: true,
-      message: 'Check-in marked successfully via QR scan.',
+      message: 'QR ස්කෑන් මගින් පැමිණීම සාර්ථකව සටහන් විය.',
       attendance
     });
   } catch (error) {

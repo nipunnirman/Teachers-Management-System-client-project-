@@ -1,3 +1,4 @@
+const { dayLabel, periodLabel, pick } = require('../utils/sinhala');
 const Timetable = require('../models/Timetable');
 const Teacher = require('../models/Teacher');
 const Notification = require('../models/Notification');
@@ -14,7 +15,7 @@ const createEntry = async (req, res, next) => {
     if (conflict) {
       return res.status(400).json({
         success: false,
-        message: `Conflict: This teacher already has a class on ${day}, Period ${period} (${conflict.subject} - ${conflict.className}).`,
+        message: pick(req, `කාල ගැටුමක්: මෙම ගුරුවරයාට ${dayLabel(day)}, ${periodLabel(period)} තුළ දැනටමත් පන්තියක් ඇත (${conflict.subject} - ${conflict.className}).`, `Conflict: This teacher already has a class on ${day}, Period ${period} (${conflict.subject} - ${conflict.className}).`),
       });
     }
 
@@ -28,13 +29,15 @@ const createEntry = async (req, res, next) => {
     if (teacherDoc) {
       await Notification.create({
         recipient: teacherDoc.user._id,
-        title: 'Timetable Updated',
-        message: `You have been assigned ${subject} for ${className} on ${day}, Period ${period} (${startTime} - ${endTime}).`,
+        title: 'කාලසටහන යාවත්කාලීන විය',
+        titleEn: 'Timetable Updated',
+        message: `${dayLabel(day)}, ${periodLabel(period)} (${startTime} - ${endTime}) ${className} පන්තියට ${subject} විෂය ඔබට පවරා ඇත.`,
+        messageEn: `You have been assigned ${subject} for ${className} on ${day}, Period ${period} (${startTime} - ${endTime}).`,
         type: 'timetable',
       });
     }
 
-    res.status(201).json({ success: true, message: 'Timetable entry created.', entry });
+    res.status(201).json({ success: true, message: 'පන්තිය එක් කරන ලදී.', entry });
   } catch (error) {
     next(error);
   }
@@ -69,7 +72,7 @@ const getAllEntries = async (req, res, next) => {
 const getMyTimetable = async (req, res, next) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id });
-    if (!teacher) return res.status(404).json({ success: false, message: 'Teacher profile not found.' });
+    if (!teacher) return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
 
     const { academicYear } = req.query;
     const filter = { teacher: teacher._id, isActive: true };
@@ -110,7 +113,7 @@ const updateEntry = async (req, res, next) => {
       if (conflict) {
         return res.status(400).json({
           success: false,
-          message: `Conflict detected on ${day}, Period ${period}.`,
+          message: pick(req, `${dayLabel(day)}, ${periodLabel(period)} තුළ කාල ගැටුමක් ඇත.`, `Conflict detected on ${day}, Period ${period}.`),
         });
       }
     }
@@ -120,9 +123,9 @@ const updateEntry = async (req, res, next) => {
       runValidators: true,
     });
 
-    if (!entry) return res.status(404).json({ success: false, message: 'Timetable entry not found.' });
+    if (!entry) return res.status(404).json({ success: false, message: 'කාලසටහන් තොරතුර හමු නොවීය.' });
 
-    res.status(200).json({ success: true, message: 'Timetable entry updated.', entry });
+    res.status(200).json({ success: true, message: 'කාලසටහන යාවත්කාලීන විය.', entry });
   } catch (error) {
     next(error);
   }
@@ -138,9 +141,9 @@ const deleteEntry = async (req, res, next) => {
       { isActive: false },
       { new: true }
     );
-    if (!entry) return res.status(404).json({ success: false, message: 'Timetable entry not found.' });
+    if (!entry) return res.status(404).json({ success: false, message: 'කාලසටහන් තොරතුර හමු නොවීය.' });
 
-    res.status(200).json({ success: true, message: 'Timetable entry removed.' });
+    res.status(200).json({ success: true, message: 'පන්තිය ඉවත් කරන ලදී.' });
   } catch (error) {
     next(error);
   }

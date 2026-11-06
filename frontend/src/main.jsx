@@ -3,8 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
+import { getLanguage } from './utils/i18n'
+import { APP_NAME } from './utils/locale'
 import App from './App'
 import './index.css'
+
+document.documentElement.lang = getLanguage()
+document.title = APP_NAME
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
