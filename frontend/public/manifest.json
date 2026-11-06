@@ -1,13 +1,13 @@
 {
-  "short_name": "TeacherPortal",
-  "name": "Kendagolla Teacher Management System",
+  "short_name": "Teachers MS",
+  "name": "Teachers Management System",
   "description": "Teacher dashboard and attendance scanner system.",
   "icons": [
     {
-      "src": "/logo.jpg",
-      "type": "image/jpeg",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
     }
   ],
   "start_url": "/dashboard",

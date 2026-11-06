@@ -204,7 +204,7 @@ export default function Salary() {
           <div style={{ background:'var(--bg)', borderRadius:12, padding:20 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
               <div>
-                <div className="font-display" style={{ fontSize:18 }}>Kendagolla School</div>
+                <div className="font-display" style={{ fontSize:18 }}>Teachers Management System</div>
                 <div className="text-muted text-sm">Salary Slip</div>
               </div>
               <div style={{ textAlign:'right' }}>

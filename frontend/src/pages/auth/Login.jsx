@@ -29,10 +29,8 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-box">
         <div className="auth-logo" style={{ flexDirection:'column', gap:12, marginBottom:32, textAlign:'center', justifyContent:'center' }}>
-          <img src="/logo.jpg" alt="Kendagolla Secondary School Logo" style={{ width:80, height:80, objectFit:'contain' }} />
           <div className="auth-logo-text">
-            <h2 style={{ fontSize:'1.3rem' }}>Kendagolla Secondary School</h2>
-            <p style={{ marginTop:2 }}>Badulla · Teacher Management System</p>
+            <h2 style={{ fontSize:'1.3rem' }}>Teachers Management System</h2>
           </div>
         </div>
 

@@ -48,15 +48,9 @@ export default function Sidebar({ open, onClose }) {
         >
           <X size={18} />
         </button>
-        <img
-          src="/logo.jpg"
-          alt="Kendagolla Secondary School Logo"
-          style={{ width: 70, height: 70, objectFit: 'contain', marginBottom: 8 }}
-        />
         <h1 style={{ fontSize: '1.1rem', textAlign: 'center', lineHeight: '1.2', margin: 0 }}>
-          Kendagolla Secondary School
+          Teachers Management System
         </h1>
-        <p style={{ textAlign: 'center', fontSize: '0.8rem', marginTop: 4 }}>Badulla</p>
       </div>
 
       <nav className="nav-section">
