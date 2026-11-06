@@ -33,6 +33,7 @@ export const authAPI = {
   forgotPassword:(data)         => api.post('/auth/forgot-password', data),
   register:      (data)         => api.post('/auth/register', data),
   adminReset:    (id, data)     => api.put(`/auth/admin-reset-password/${id}`, data),
+  changePassword:(data)         => api.put('/auth/change-password', data),
 };
 
 // ── Teachers ──────────────────────────────────────
@@ -90,6 +91,32 @@ export const notifAPI = {
   markAllRead: ()       => api.put('/notifications/read-all'),
   announce:    (data)   => api.post('/notifications/announce', data),
   remove:      (id)     => api.delete(`/notifications/${id}`),
+};
+
+// ── Settings, calendar, relief, push ──────────────
+export const settingsAPI = {
+  get:    ()     => api.get('/settings'),
+  update: (data) => api.put('/settings', data),
+};
+
+export const calendarAPI = {
+  getAll: (params)   => api.get('/calendar', { params }),
+  create: (data)     => api.post('/calendar', data),
+  update: (id, data) => api.put(`/calendar/${id}`, data),
+  remove: (id)       => api.delete(`/calendar/${id}`),
+};
+
+export const reliefAPI = {
+  getPlan: (params) => api.get('/relief', { params }),
+  getMine: (params) => api.get('/relief/me', { params }),
+  assign:  (data)   => api.post('/relief', data),
+  remove:  (id)     => api.delete(`/relief/${id}`),
+};
+
+export const pushAPI = {
+  key:         ()     => api.get('/push/key'),
+  subscribe:   (data) => api.post('/push/subscribe', data),
+  unsubscribe: (data) => api.post('/push/unsubscribe', data),
 };
 
 // ── Reports ───────────────────────────────────────

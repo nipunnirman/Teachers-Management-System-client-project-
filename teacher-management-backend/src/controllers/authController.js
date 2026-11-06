@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const { sendEmail } = require('../utils/email');
+const { ADMIN_PROFILE_FIELDS, pickAllowed } = require('../utils/teacherFields');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -15,13 +16,13 @@ const generateToken = (id) => {
 // @access  Admin
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, profile } = req.body;
 
     const user = await User.create({ name, email, password, role });
 
     // If role is teacher, create a Teacher profile linked to this user
     if (role === 'teacher') {
-      await Teacher.create({ user: user._id });
+      await Teacher.create({ ...pickAllowed(profile || {}, ADMIN_PROFILE_FIELDS), user: user._id });
     }
 
     const token = generateToken(user._id);
@@ -165,4 +166,25 @@ const adminResetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword, adminResetPassword };
+// @desc    Change own password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'වත්මන් මුරපදය සහ නව මුරපදය අවශ්‍යයි.' });
+    }
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(400).json({ success: false, message: 'වත්මන් මුරපදය වැරදියි.' });
+    }
+    user.password = newPassword;
+    await user.save();
+    res.status(200).json({ success: true, message: 'මුරපදය සාර්ථකව යාවත්කාලීන විය.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, adminResetPassword, changePassword };

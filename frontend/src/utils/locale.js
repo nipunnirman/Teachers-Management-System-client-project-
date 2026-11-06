@@ -46,6 +46,11 @@ export const LEAVE_TYPE_LABELS = pick(
   { annual: 'Annual', sick: 'Sick', casual: 'Casual', maternity: 'Maternity', paternity: 'Paternity', unpaid: 'Unpaid', other: 'Other' },
 );
 
+export const EVENT_TYPE_LABELS = pick(
+  { holiday: 'නිවාඩු දිනය', term: 'පාසල් වාරය', meeting: 'රැස්වීම', event: 'සිදුවීම' },
+  { holiday: 'Holiday', term: 'School term', meeting: 'Meeting', event: 'Event' },
+);
+
 export const ROLE_LABELS = pick({ admin: 'පරිපාලක', teacher: 'ගුරුවරයා' }, { admin: 'Admin', teacher: 'Teacher' });
 
 export const periodLabel = (period) => pick(`${period} වන කාලච්ඡේදය`, `Period ${period}`);

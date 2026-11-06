@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api';
+import { forgetPushOnDevice } from '../utils/push';
+import { clearSettings } from '../utils/settings';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +37,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    // This phone should stop receiving this person's notifications.
+    forgetPushOnDevice();
+    clearSettings();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

@@ -1,4 +1,5 @@
-const { timeLabel, timeLabelEn } = require('../utils/sinhala');
+const { colomboMinutes, timeLabel, timeLabelEn } = require('../utils/sinhala');
+const Settings = require('../models/Settings');
 const Attendance = require('../models/Attendance');
 const Teacher = require('../models/Teacher');
 const Notification = require('../models/Notification');
@@ -143,19 +144,30 @@ const getMonthlyReport = async (req, res, next) => {
 
 // Generate HMAC daily token based on a secret and today's date
 const crypto = require('crypto');
-const generateDailyToken = () => {
+// The code changes every 30 seconds, so a photo of it soon stops working.
+const QR_WINDOW_SECONDS = 30;
+const qrWindow = () => Math.floor(Date.now() / (QR_WINDOW_SECONDS * 1000));
+const generateQrToken = (window) => {
   const secret = process.env.JWT_SECRET || 'super-secret-key-for-qr';
-  const todayStr = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
-  return crypto.createHmac('sha256', secret).update(todayStr).digest('hex');
+  return crypto.createHmac('sha256', secret).update(`qr:${window}`).digest('hex');
 };
+
+function metersBetween(lat1, lng1, lat2, lng2) {
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // @desc    Get today's QR code token
 // @route   GET /api/attendance/qr/today
 // @access  Admin
 const getTodayQRToken = async (req, res, next) => {
   try {
-    const token = generateDailyToken();
-    res.status(200).json({ success: true, token });
+    const window = qrWindow();
+    const refreshIn = (window + 1) * QR_WINDOW_SECONDS * 1000 - Date.now();
+    res.status(200).json({ success: true, token: generateQrToken(window), refreshIn });
   } catch (error) {
     next(error);
   }
@@ -166,14 +178,26 @@ const getTodayQRToken = async (req, res, next) => {
 // @access  Teacher
 const scanQRAndMark = async (req, res, next) => {
   try {
-    const { token } = req.body;
+    const { token, latitude, longitude } = req.body;
     if (!token) {
       return res.status(400).json({ success: false, message: 'QR කේතය අවශ්‍යයි.' });
     }
 
-    const expectedToken = generateDailyToken();
-    if (token !== expectedToken) {
+    // The previous code stays valid briefly, for scans made just as it changes.
+    const window = qrWindow();
+    if (token !== generateQrToken(window) && token !== generateQrToken(window - 1)) {
       return res.status(400).json({ success: false, message: 'QR කේතය වලංගු නැත හෝ කල් ඉකුත් වී ඇත.' });
+    }
+
+    const settings = await Settings.current();
+    if (settings.location.enabled) {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return res.status(400).json({ success: false, message: 'පැමිණීම සටහන් කිරීමට ඔබගේ ස්ථානයට අවසර දෙන්න.' });
+      }
+      const distance = metersBetween(latitude, longitude, settings.location.latitude, settings.location.longitude);
+      if (distance > settings.location.radiusMeters) {
+        return res.status(400).json({ success: false, message: 'ඔබ පාසල් භූමියේ නොමැති බැවින් පැමිණීම සටහන් කළ නොහැක.' });
+      }
     }
 
     // Find the teacher profile associated with logged in user
@@ -219,11 +243,13 @@ const scanQRAndMark = async (req, res, next) => {
       }
     }
 
-    // Mark check-in
+    // Mark check-in. After the school's set time it counts as late.
+    const [lateHour, lateMinute] = settings.lateAfter.split(':').map(Number);
+    const isLate = colomboMinutes(today) > lateHour * 60 + lateMinute;
     attendance = await Attendance.create({
       teacher: teacher._id,
       date: attendanceDate,
-      status: 'present',
+      status: isLate ? 'late' : 'present',
       checkIn: today,
       markedBy: req.user.id,
       notes: 'QR ස්කෑන් මගින් පැමිණීම සටහන් විය'
@@ -241,7 +267,7 @@ const scanQRAndMark = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'QR ස්කෑන් මගින් පැමිණීම සාර්ථකව සටහන් විය.',
+      message: isLate ? 'QR ස්කෑන් මගින් පැමිණීම සටහන් විය. ඔබ අද ප්‍රමාද වී ඇත.' : 'QR ස්කෑන් මගින් පැමිණීම සාර්ථකව සටහන් විය.',
       attendance
     });
   } catch (error) {

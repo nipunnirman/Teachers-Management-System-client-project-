@@ -1,5 +1,8 @@
 const Teacher = require('../models/Teacher');
 const User = require('../models/User');
+const { ADMIN_PROFILE_FIELDS, TEACHER_PROFILE_FIELDS, pickAllowed } = require('../utils/teacherFields');
+
+const isOwnProfile = (teacher, req) => String(teacher.user?._id || teacher.user) === String(req.user.id);
 
 // @desc    Get all teachers
 // @route   GET /api/teachers
@@ -14,14 +17,14 @@ const getAllTeachers = async (req, res, next) => {
     if (department) filter.department = department;
     if (employmentType) filter.employmentType = employmentType;
 
-    let query = Teacher.find(filter).populate('user', 'name email isActive');
+    let query = Teacher.find(filter).select('-changeHistory').populate('user', 'name email isActive');
 
     if (search) {
       const users = await User.find({
         name: { $regex: search, $options: 'i' },
       }).select('_id');
       const userIds = users.map((u) => u._id);
-      query = Teacher.find({ ...filter, user: { $in: userIds } }).populate('user', 'name email isActive');
+      query = Teacher.find({ ...filter, user: { $in: userIds } }).select('-changeHistory').populate('user', 'name email isActive');
     }
 
     const teachers = await query.sort({ createdAt: -1 });
@@ -36,9 +39,12 @@ const getAllTeachers = async (req, res, next) => {
 // @access  Admin | Teacher (own profile)
 const getTeacher = async (req, res, next) => {
   try {
-    const teacher = await Teacher.findById(req.params.id).populate('user', 'name email role isActive lastLogin');
+    const teacher = await Teacher.findById(req.params.id).select('-changeHistory').populate('user', 'name email role isActive lastLogin');
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'ගුරුවරයා හමු නොවීය.' });
+    }
+    if (req.user.role !== 'admin' && !isOwnProfile(teacher, req)) {
+      return res.status(403).json({ success: false, message: 'මෙම ක්‍රියාව සඳහා ඔබට අවසර නැත.' });
     }
     res.status(200).json({ success: true, teacher });
   } catch (error) {
@@ -51,7 +57,7 @@ const getTeacher = async (req, res, next) => {
 // @access  Teacher
 const getMyProfile = async (req, res, next) => {
   try {
-    const teacher = await Teacher.findOne({ user: req.user.id }).populate('user', 'name email role');
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('-changeHistory').populate('user', 'name email role');
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
     }
@@ -71,18 +77,22 @@ const updateTeacher = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'ගුරුවරයා හමු නොවීය.' });
     }
 
-    // Teachers can only update limited fields
-    let allowedUpdates = req.body;
-    if (req.user.role === 'teacher') {
-      const { phone, address, emergencyContact } = req.body;
-      allowedUpdates = { phone, address, emergencyContact };
+    // Teachers can only update limited fields on their own profile
+    if (req.user.role !== 'admin' && !isOwnProfile(teacher, req)) {
+      return res.status(403).json({ success: false, message: 'මෙම ක්‍රියාව සඳහා ඔබට අවසර නැත.' });
+    }
+    const allowedUpdates = pickAllowed(req.body, req.user.role === 'admin' ? ADMIN_PROFILE_FIELDS : TEACHER_PROFILE_FIELDS);
+
+    if (allowedUpdates.profilePhoto && !/^data:image\/(jpeg|png|webp);base64,/.test(allowedUpdates.profilePhoto)) {
+      return res.status(400).json({ success: false, message: 'ඡායාරූපය වලංගු නැත.' });
     }
 
-    // Record change in audit trail
+    // Record change in audit trail, leaving out the photo data
+    const { profilePhoto, ...loggedChanges } = allowedUpdates;
     teacher.changeHistory.push({
       changedBy: req.user.id,
       changedAt: new Date(),
-      changes: allowedUpdates,
+      changes: profilePhoto !== undefined ? { ...loggedChanges, profilePhoto: 'updated' } : loggedChanges,
     });
 
     Object.assign(teacher, allowedUpdates);

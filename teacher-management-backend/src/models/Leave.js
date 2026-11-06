@@ -49,7 +49,8 @@ const leaveSchema = new mongoose.Schema(
 
 // Auto-calculate total days before saving
 leaveSchema.pre('save', function (next) {
-  if (this.startDate && this.endDate) {
+  // Set once. Later saves, such as a review, must not change the count.
+  if (this.totalDays == null && this.startDate && this.endDate) {
     const diff = this.endDate - this.startDate;
     this.totalDays = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
   }

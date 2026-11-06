@@ -1,16 +1,19 @@
 import { tr } from '../../utils/i18n'
 import { useEffect, useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
-import { Modal, PageLoader, EmptyState, Badge } from '../../components/common'
+import { Avatar, Modal, PageLoader, EmptyState, Badge } from '../../components/common'
+import TeacherRecord, { teacherDetails } from '../../components/common/TeacherRecord'
+import { resizePhoto } from '../../utils/photo'
 import { teacherAPI, authAPI } from '../../api'
 import toast from 'react-hot-toast'
-import { Plus, Search, Edit2, Trash2, Eye, X } from 'lucide-react'
+import { Camera, KeyRound, Plus, Printer, Search, Edit2, Trash2, Eye, X } from 'lucide-react'
 import { STATUS_LABELS, formatDate } from '../../utils/locale'
 
 const EMPLOYMENT_TYPES = ['permanent','temporary','part-time']
 const blankForm = {
   name:'', email:'', password:'', employmentType:'permanent',
   phone:'', department:'', subjects:'', grades:'',
+  nic:'', dateOfBirth:'', appointmentDate:'', qualificationsText:'', street:'', profilePhoto:'',
 }
 
 export default function Teachers() {
@@ -22,6 +25,7 @@ export default function Teachers() {
   const [editing, setEditing]     = useState(null)
   const [form, setForm]           = useState(blankForm)
   const [saving, setSaving]       = useState(false)
+  const [newPassword, setNewPassword] = useState('')
 
   const load = async () => {
     try {
@@ -47,6 +51,12 @@ export default function Teachers() {
       phone: t.phone || '', department: t.department || '',
       subjects: (t.subjects || []).join(', '),
       grades:   (t.grades || []).join(', '),
+      nic: t.nic || '',
+      dateOfBirth: t.dateOfBirth?.slice(0, 10) || '',
+      appointmentDate: t.appointmentDate?.slice(0, 10) || '',
+      qualificationsText: t.qualificationsText || '',
+      street: t.address?.street || '',
+      profilePhoto: t.profilePhoto || '',
     })
     setModalOpen(true)
   }
@@ -54,17 +64,24 @@ export default function Teachers() {
   const handleSave = async () => {
     if (!form.name || !form.email) return toast.error(tr('නම සහ ඊමේල් ලිපිනය අවශ්‍යයි'))
     setSaving(true)
+    const profile = {
+      employmentType: form.employmentType,
+      phone: form.phone, department: form.department,
+      subjects: form.subjects.split(',').map(s => s.trim()).filter(Boolean),
+      grades:   form.grades.split(',').map(s => s.trim()).filter(Boolean),
+      nic: form.nic,
+      dateOfBirth: form.dateOfBirth,
+      appointmentDate: form.appointmentDate,
+      qualificationsText: form.qualificationsText,
+      address: { ...editing?.address, street: form.street },
+      profilePhoto: form.profilePhoto,
+    }
     try {
       if (editing) {
-        await teacherAPI.update(editing._id, {
-          employmentType: form.employmentType,
-          phone: form.phone, department: form.department,
-          subjects: form.subjects.split(',').map(s => s.trim()).filter(Boolean),
-          grades:   form.grades.split(',').map(s => s.trim()).filter(Boolean),
-        })
+        await teacherAPI.update(editing._id, profile)
         toast.success(tr('ගුරු තොරතුරු යාවත්කාලීන විය'))
       } else {
-        await authAPI.register({ name: form.name, email: form.email, password: form.password, role: 'teacher' })
+        await authAPI.register({ name: form.name, email: form.email, password: form.password, role: 'teacher', profile })
         toast.success(tr('ගුරුවරයා ලියාපදිංචි විය'))
       }
       setModalOpen(false); load()
@@ -79,7 +96,25 @@ export default function Teachers() {
     catch { toast.error(tr('ඉවත් කිරීමට නොහැකි විය')) }
   }
 
-  const initials = (name) => name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() || '?'
+  const choosePhoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const profilePhoto = await resizePhoto(file)
+      setForm(f => ({ ...f, profilePhoto }))
+    } catch { toast.error(tr('ඡායාරූපය සුරැකීමට නොහැකි විය')) }
+  }
+
+  const resetPassword = async () => {
+    if (newPassword.length < 8) return toast.error(tr('නව මුරපදයේ අවම වශයෙන් අක්ෂර 8ක් තිබිය යුතුය'))
+    try {
+      const { data } = await authAPI.adminReset(viewModal.user._id, { newPassword })
+      toast.success(data.message)
+      setNewPassword('')
+    } catch (err) { toast.error(err.response?.data?.message || tr('මුරපදය වෙනස් කිරීමට නොහැකි විය')) }
+  }
+
 
   if (loading) return <AppLayout title={tr('ගුරුවරු')}><PageLoader /></AppLayout>
 
@@ -120,7 +155,7 @@ export default function Teachers() {
                   <tr key={t._id}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div className="user-avatar">{initials(t.user?.name)}</div>
+                        <Avatar name={t.user?.name} photo={t.profilePhoto} />
                         <div>
                           <div style={{ fontWeight:500 }}>{t.user?.name}</div>
                           <div className="text-sm text-muted">{t.user?.email}</div>
@@ -141,7 +176,7 @@ export default function Teachers() {
                     <td><Badge status={t.user?.isActive ? 'active' : 'inactive'}/></td>
                     <td>
                       <div style={{ display:'flex', gap:6 }}>
-                        <button className="btn btn-icon btn-ghost" onClick={() => setViewModal(t)} title={tr('බලන්න')} aria-label={tr('බලන්න')}><Eye size={14}/></button>
+                        <button className="btn btn-icon btn-ghost" onClick={() => { setNewPassword(''); setViewModal(t) }} title={tr('බලන්න')} aria-label={tr('බලන්න')}><Eye size={14}/></button>
                         <button className="btn btn-icon btn-ghost" onClick={() => openEdit(t)} title={tr('සංස්කරණය')} aria-label={tr('සංස්කරණය')}><Edit2 size={14}/></button>
                         <button className="btn btn-icon btn-danger" onClick={() => handleDelete(t)} title={tr('මකන්න')} aria-label={tr('මකන්න')}><Trash2 size={14}/></button>
                       </div>
@@ -160,7 +195,7 @@ export default function Teachers() {
               <div key={t._id} className="mobile-card-item">
                 <div className="mobile-card-header">
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <div className="user-avatar" style={{ width:40, height:40, minWidth:40 }}>{initials(t.user?.name)}</div>
+                    <Avatar name={t.user?.name} photo={t.profilePhoto} size={40} />
                     <div>
                       <div className="mobile-card-title">{t.user?.name}</div>
                       <div className="mobile-card-sub">{t.user?.email}</div>
@@ -190,7 +225,7 @@ export default function Teachers() {
                   </div>
                 )}
                 <div className="mobile-card-actions">
-                  <button className="btn btn-sm btn-ghost" onClick={() => setViewModal(t)}><Eye size={13}/> {tr('බලන්න')}</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => { setNewPassword(''); setViewModal(t) }}><Eye size={13}/> {tr('බලන්න')}</button>
                   <button className="btn btn-sm btn-ghost" onClick={() => openEdit(t)}><Edit2 size={13}/> {tr('සංස්කරණය')}</button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t)}><Trash2 size={13}/> {tr('මකන්න')}</button>
                 </div>
@@ -227,6 +262,37 @@ export default function Teachers() {
             <input className="form-input" type="password" placeholder={tr('අවම වශයෙන් අක්ෂර 8ක්')} value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))}/>
           </div>
         )}
+        <div className="form-group photo-field">
+          <Avatar name={form.name || editing?.user?.name} photo={form.profilePhoto} size={52} />
+          <label className="btn btn-sm btn-ghost">
+            <Camera size={14}/> {tr('ඡායාරූපය')}
+            <input type="file" accept="image/*" hidden onChange={choosePhoto} />
+          </label>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">{tr('ජාතික හැඳුනුම්පත් අංකය')}</label>
+            <input className="form-input" value={form.nic} onChange={e => setForm(f=>({...f,nic:e.target.value}))}/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">{tr('උපන් දිනය')}</label>
+            <input className="form-input" type="date" value={form.dateOfBirth} onChange={e => setForm(f=>({...f,dateOfBirth:e.target.value}))}/>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">{tr('ලිපිනය')}</label>
+          <input className="form-input" value={form.street} onChange={e => setForm(f=>({...f,street:e.target.value}))}/>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">{tr('පත්වීම් දිනය')}</label>
+            <input className="form-input" type="date" value={form.appointmentDate} onChange={e => setForm(f=>({...f,appointmentDate:e.target.value}))}/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">{tr('සුදුසුකම්')}</label>
+            <input className="form-input" placeholder={tr('උපාධිය, ඩිප්ලෝමාව')} value={form.qualificationsText} onChange={e => setForm(f=>({...f,qualificationsText:e.target.value}))}/>
+          </div>
+        </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">{tr('අංශය')}</label>
@@ -258,30 +324,34 @@ export default function Teachers() {
       {/* View Modal */}
       {viewModal && (
         <Modal open={!!viewModal} onClose={() => setViewModal(null)} title={tr('ගුරු පැතිකඩ')}
-          footer={<button className="btn btn-ghost" onClick={() => setViewModal(null)}>{tr('වසන්න')}</button>}>
+          footer={<>
+            <button className="btn btn-ghost" onClick={() => setViewModal(null)}>{tr('වසන්න')}</button>
+            <button className="btn btn-primary" onClick={() => window.print()}><Printer size={15}/> {tr('මුද්‍රණය කරන්න')}</button>
+          </>}>
           <div style={{ display:'flex', flexDirection:'column', gap:14, paddingBottom:12 }}>
             <div style={{ display:'flex', alignItems:'center', gap:14, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
-              <div className="user-avatar" style={{ width:52, height:52, minWidth:52, fontSize:17 }}>{initials(viewModal.user?.name)}</div>
+              <Avatar name={viewModal.user?.name} photo={viewModal.profilePhoto} size={52} />
               <div>
                 <div style={{ fontWeight:600, fontSize:16 }}>{viewModal.user?.name}</div>
                 <div className="text-muted text-sm">{viewModal.user?.email}</div>
                 <div style={{ marginTop:4 }}><Badge status={viewModal.employmentType}/></div>
               </div>
             </div>
-            {[
-              [tr('ගුරු අංකය'), viewModal.teacherId],
-              [tr('අංශය'), viewModal.department || '—'],
-              [tr('දුරකථන අංකය'),      viewModal.phone || '—'],
-              [tr('විෂයයන්'),   viewModal.subjects?.join(', ') || '—'],
-              [tr('ශ්‍රේණි'),     viewModal.grades?.join(', ') || '—'],
-              [tr('සේවයට එක් වූ දිනය'),     viewModal.joiningDate ? formatDate(viewModal.joiningDate) : '—'],
-            ].map(([k,v]) => (
+            {teacherDetails(viewModal).map(([k,v]) => (
               <div key={k} className="detail-row">
                 <span className="text-muted">{k}</span>
                 <span>{v}</span>
               </div>
             ))}
+            <div className="reset-password">
+              <label className="form-label" htmlFor="reset-password">{tr('මෙම ගුරුවරයාගේ මුරපදය යළි සකසන්න')}</label>
+              <div className="relief-assign">
+                <input id="reset-password" className="form-input" type="password" autoComplete="new-password" placeholder={tr('අවම වශයෙන් අක්ෂර 8ක්')} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <button className="btn btn-ghost" onClick={resetPassword}><KeyRound size={15}/> {tr('යළි සකසන්න')}</button>
+              </div>
+            </div>
           </div>
+          <TeacherRecord teacher={viewModal} />
         </Modal>
       )}
     </AppLayout>

@@ -15,6 +15,32 @@ const DAY_LABELS = {
 };
 
 const ENGLISH = {
+  'පාසලේ ස්ථානය ඇතුළත් කරන්න.': 'Enter the school location.',
+  'සැකසුම් සුරකින ලදී.': 'Settings saved.',
+  'මාතෘකාව සහ දිනය අවශ්‍යයි.': 'Title and date are required.',
+  'අවසන් දිනය ආරම්භක දිනයට පෙර විය නොහැක.': 'The end date cannot be before the start date.',
+  'සිදුවීම හමු නොවීය.': 'Event not found.',
+  'සිදුවීම එක් කරන ලදී.': 'Event added.',
+  'සිදුවීම යාවත්කාලීන විය.': 'Event updated.',
+  'සිදුවීම ඉවත් කරන ලදී.': 'Event removed.',
+  'දිනය වලංගු නැත.': 'The date is not valid.',
+  'දිනය, පන්තිය සහ ආදේශක ගුරුවරයා අවශ්‍යයි.': 'Date, class and relief teacher are required.',
+  'ආදේශකයක් අවශ්‍ය පන්තිය හමු නොවීය.': 'That class does not need relief on this date.',
+  'මෙම පන්තියට දැනටමත් ආදේශකයෙකු පවරා ඇත.': 'This class already has a relief teacher.',
+  'මෙම ගුරුවරයා එම කාලච්ඡේදයේ නිදහස් නැත.': 'This teacher is not free in that period.',
+  'ආදේශක ගුරුවරයා පවරන ලදී.': 'Relief teacher assigned.',
+  'ආදේශක පැවරුම හමු නොවීය.': 'Relief assignment not found.',
+  'ආදේශක පැවරුම ඉවත් කරන ලදී.': 'Relief assignment removed.',
+  'දැනුම්දීම් සක්‍රීය කිරීමට නොහැකි විය.': 'Could not turn on notifications.',
+  'දැනුම්දීම් සක්‍රීය විය.': 'Notifications turned on.',
+  'දැනුම්දීම් අක්‍රීය විය.': 'Notifications turned off.',
+  'වත්මන් මුරපදය සහ නව මුරපදය අවශ්‍යයි.': 'Current and new passwords are required.',
+  'වත්මන් මුරපදය වැරදියි.': 'The current password is incorrect.',
+  'ඡායාරූපය වලංගු නැත.': 'The photo is not valid.',
+  'පැමිණීම සටහන් කිරීමට ඔබගේ ස්ථානයට අවසර දෙන්න.': 'Allow location access to mark attendance.',
+  'ඔබ පාසල් භූමියේ නොමැති බැවින් පැමිණීම සටහන් කළ නොහැක.': 'You are not at the school, so attendance cannot be marked.',
+  'QR ස්කෑන් මගින් පැමිණීම සටහන් විය. ඔබ අද ප්‍රමාද වී ඇත.': 'Checked in via QR scan. You are marked late today.',
+  'තෝරාගත් දිනවල පාසල් දින නොමැත.': 'There are no school days in the dates you chose.',
   'පන්තිය එක් කරන ලදී.': 'Timetable entry created.',
   'ගුරු පැතිකඩ හමු නොවීය.': 'Teacher profile not found.',
   'කාලසටහන් තොරතුර හමු නොවීය.': 'Timetable entry not found.',
@@ -103,6 +129,12 @@ function dateLabelEn(date) {
   return `${MONTHS_EN[month - 1]} ${day}, ${year}`;
 }
 
+// Minutes since midnight in Sri Lanka.
+function colomboMinutes(date) {
+  const { hour, minute } = colomboParts(date);
+  return hour * 60 + minute;
+}
+
 const wantsEnglish = (req) => req.get('X-Language') === 'en';
 
 // For messages with values inside them.
@@ -114,7 +146,7 @@ function localizeResponses(req, res, next) {
     const send = res.json.bind(res);
     res.json = (body) => {
       if (body && typeof body.message === 'string') {
-        const message = body.message.split(', ').map((part) => ENGLISH[part] || part).join(', ');
+        const message = ENGLISH[body.message] || body.message.split(', ').map((part) => ENGLISH[part] || part).join(', ');
         return send({ ...body, message });
       }
       return send(body);
@@ -123,4 +155,4 @@ function localizeResponses(req, res, next) {
   next();
 }
 
-module.exports = { dayLabel, periodLabel, timeLabel, timeLabelEn, dateLabel, dateLabelEn, pick, localizeResponses };
+module.exports = { colomboMinutes, dayLabel, periodLabel, timeLabel, timeLabelEn, dateLabel, dateLabelEn, pick, localizeResponses };

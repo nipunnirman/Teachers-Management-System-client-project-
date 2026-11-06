@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import AppLayout from '../components/layout/AppLayout'
 import { StatCard, PageLoader } from '../components/common'
-import { reportAPI, attendanceAPI, leaveAPI, timetableAPI } from '../api'
+import { reportAPI, attendanceAPI, calendarAPI, leaveAPI, reliefAPI, timetableAPI } from '../api'
+import { dateKey, eventCoversDate, loadSettings } from '../utils/settings'
 import { Users, CalendarCheck, CalendarOff, Clock, Calendar, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { MONTHS_SHORT, formatDayDate, formatFullDate, formatTime, periodLabel } from '../utils/locale'
@@ -98,6 +99,7 @@ function TodaySchedule({ classes }) {
                   <div className="schedule-meta">{e.className} {e.grade && `· ${e.grade}`}</div>
                   {isNext && <div className="schedule-flag">{tr('ඊළඟ පන්තිය')}</div>}
                   {isNow && <div className="schedule-flag now">{tr('දැන් පැවැත්වේ')}</div>}
+                  {e.isRelief && <div className="schedule-flag">{tr('ආදේශක පන්තිය')}</div>}
                 </div>
                 <div className="schedule-time">{e.startTime} – {e.endTime}</div>
               </div>
@@ -120,7 +122,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isAdmin) {
-      Promise.all([reportAPI.dashboard(), reportAPI.attendance({ year }), timetableAPI.getAll({ academicYear: '2025-2026' })])
+      loadSettings().then(settings => Promise.all([reportAPI.dashboard(), reportAPI.attendance({ year }), timetableAPI.getAll({ academicYear: settings.academicYear })]))
         .then(([dash, att, tt]) => {
           setData({
             ...dash.data.dashboard,
@@ -137,21 +139,27 @@ export default function Dashboard() {
         })
         .finally(() => setLoading(false))
     } else {
-      Promise.all([
+      const key = dateKey()
+      loadSettings().then(settings => Promise.all([
         attendanceAPI.getMe({ month: new Date().getMonth() + 1, year }),
         leaveAPI.getAll({ status: 'pending' }),
-        timetableAPI.getMe({ academicYear: '2025-2026' }),
-      ])
-        .then(([att, leaves, tt]) => {
+        timetableAPI.getMe({ academicYear: settings.academicYear }),
+        reliefAPI.getMine({ date: key }).catch(() => ({ data: { assignments: [] } })),
+        calendarAPI.getAll({ year, month: new Date().getMonth() + 1 }).catch(() => ({ data: { events: [] } })),
+      ]))
+        .then(([att, leaves, tt, relief, calendar]) => {
           const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
           const todayDayName = days[new Date().getDay()]
-          const todayClassesList = tt.data.weekly?.[todayDayName] || []
+          const holiday = calendar.data.events.find(e => e.type === 'holiday' && eventCoversDate(e, key))
+          const reliefClasses = relief.data.assignments.map(a => ({ ...a, isRelief: true }))
+          const todayClassesList = holiday ? [] : [...(tt.data.weekly?.[todayDayName] || []), ...reliefClasses]
           setTeacherData({
             attendance: att.data,
             pendingLeaves: leaves.data.count,
             todayClasses: todayClassesList.length,
             todayClassesList: todayClassesList,
             weekClassesCount: tt.data.entries?.length || 0,
+            holiday: holiday?.title || null,
           })
         })
         .finally(() => setLoading(false))
@@ -161,7 +169,7 @@ export default function Dashboard() {
   if (loading) return <AppLayout title={tr('මුල් පිටුව')}><PageLoader /></AppLayout>
 
   if (!isAdmin && teacherData) {
-    const { attendance, pendingLeaves, todayClasses, todayClassesList, weekClassesCount } = teacherData
+    const { attendance, pendingLeaves, todayClasses, todayClassesList, weekClassesCount, holiday } = teacherData
     return (
       <AppLayout title={tr('මුල් පිටුව')}>
         <div className="page-header home-header">
@@ -171,6 +179,8 @@ export default function Dashboard() {
           </div>
           <LiveClock />
         </div>
+        {holiday && <div className="holiday-banner">{tr('අද නිවාඩු දිනයකි: {title}', { title: holiday })}</div>}
+
         <TodaySchedule classes={todayClassesList || []} />
 
         <div className="stats-grid" style={{ marginTop: 14, marginBottom: 0 }}>

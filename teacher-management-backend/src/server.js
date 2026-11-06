@@ -14,6 +14,10 @@ const salaryRoutes = require('./routes/salaryRoutes');
 const timetableRoutes = require('./routes/timetableRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const calendarRoutes = require('./routes/calendarRoutes');
+const reliefRoutes = require('./routes/reliefRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 
 // Connect to MongoDB
 connectDB();
@@ -25,7 +29,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:4200',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '200kb' })); // room for a small profile photo
 app.use(express.urlencoded({ extended: true }));
 app.use(localizeResponses);
 
@@ -51,6 +55,10 @@ app.use('/api/salary', salaryRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/relief', reliefRoutes);
+app.use('/api/push', pushRoutes);
 
 // ── 404 handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

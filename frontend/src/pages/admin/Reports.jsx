@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
 import { Users, Wallet, CalendarOff, TrendingUp } from 'lucide-react'
 import { LEAVE_TYPE_LABELS, MONTHS_SHORT, STATUS_LABELS } from '../../utils/locale'
+import { loadSettings } from '../../utils/settings'
+import ReportExport from '../../components/common/ReportExport'
 
 const MONTHS = MONTHS_SHORT
 const PIE_COLORS = ['var(--green)','var(--red)','var(--amber)','var(--blue)','var(--gold)','var(--text-2)']
@@ -35,13 +37,13 @@ export default function Reports() {
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    Promise.all([
+    loadSettings().then(settings => Promise.all([
       reportAPI.dashboard(),
       reportAPI.attendance({ year }),
       reportAPI.leave({ year }),
       reportAPI.salary({ year }),
-      reportAPI.workload({ academicYear: `${year-1}-${year}` }),
-    ]).then(([d, att, lv, sal, wl]) => {
+      reportAPI.workload({ academicYear: settings.academicYear }),
+    ])).then(([d, att, lv, sal, wl]) => {
       setDash(d.data.dashboard)
       // Build monthly attendance chart
       const mMap = {}
@@ -78,6 +80,8 @@ export default function Reports() {
           <p className="page-subtitle">{tr('{year} වර්ෂයේ සාරාංශය', { year })}</p>
         </div>
       </div>
+
+      <ReportExport />
 
       {/* KPI Cards */}
       {dash && (

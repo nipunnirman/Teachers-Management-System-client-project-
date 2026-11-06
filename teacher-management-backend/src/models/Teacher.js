@@ -31,6 +31,7 @@ const teacherSchema = new mongoose.Schema(
       relationship: String,
     },
     profilePhoto: String,
+    nic: { type: String, trim: true },
 
     // Professional Information
     employmentType: {
@@ -42,6 +43,8 @@ const teacherSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    appointmentDate: Date,
+    qualificationsText: String,
     department: String,
     subjects: [String],
     grades: [String],

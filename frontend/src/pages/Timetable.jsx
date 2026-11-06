@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { DAY_LABELS, DAY_LABELS_SHORT, periodLabel } from '../utils/locale'
+import { loadSettings } from '../utils/settings'
 
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const PERIODS = [1,2,3,4,5,6,7,8]
@@ -23,10 +24,10 @@ export default function Timetable() {
   const [teachers, setTeachers]             = useState([])
   const [loading, setLoading]               = useState(true)
   const [modalOpen, setModalOpen]           = useState(false)
-  const [academicYear, setAcademicYear]     = useState('2025-2026')
+  const [academicYear, setAcademicYear]     = useState('')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [activeDay, setActiveDay]           = useState(todayOrMonday) // for mobile tab
-  const [form, setForm] = useState({ teacher:'', subject:'', grade:'', className:'', day:'Monday', period:1, startTime:'08:00', endTime:'08:45', academicYear:'2025-2026' })
+  const [form, setForm] = useState({ teacher:'', subject:'', grade:'', className:'', day:'Monday', period:1, startTime:'08:00', endTime:'08:45', academicYear:'' })
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
@@ -56,7 +57,10 @@ export default function Timetable() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [academicYear, isAdmin, selectedTeacherId])
+  useEffect(() => {
+    loadSettings().then(s => setAcademicYear(s.academicYear)).catch(() => toast.error(tr('කාලසටහන ලබාගැනීමට නොහැකි විය')))
+  }, [])
+  useEffect(() => { if (academicYear) load() }, [academicYear, isAdmin, selectedTeacherId])
   useEffect(() => { if (isAdmin) teacherAPI.getAll().then(r => setTeachers(r.data.teachers)).catch(()=>{}) }, [isAdmin])
 
   const handleCreate = async () => {

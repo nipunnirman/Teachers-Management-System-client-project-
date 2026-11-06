@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown, QrCode, Camera, CheckCircle2 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Html5Qrcode } from 'html5-qrcode'
+import { loadSettings } from '../utils/settings'
 import { MONTHS_FULL, STATUS_LABELS, formatShortDayDate, formatTime } from '../utils/locale'
 
 const MONTHS = MONTHS_FULL
@@ -19,6 +20,20 @@ function fmtDate(d) {
 }
 function fmtTime(t) {
   return t ? formatTime(t) : '—'
+}
+
+// Position is only read when the school has turned on the location check.
+async function readLocation() {
+  try {
+    const settings = await loadSettings()
+    if (!settings.location?.enabled) return {}
+    const { coords } = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 12000 })
+    })
+    return { latitude: coords.latitude, longitude: coords.longitude }
+  } catch {
+    return {}
+  }
 }
 
 export default function Attendance() {
@@ -42,19 +57,28 @@ export default function Attendance() {
   const [scanSuccess, setScanSuccess] = useState(null)
 
 
-  // Fetch admin QR token
-  const fetchQrToken = async () => {
-    try {
-      const { data } = await attendanceAPI.getTodayQRToken()
-      setQrToken(data.token)
-    } catch {
-      toast.error(tr('QR කේතය ලබාගැනීමට නොහැකි විය'))
-    }
-  }
-
+  // The admin's QR code changes every 30 seconds while it is on screen.
   useEffect(() => {
-    if (qrModalOpen) {
-      fetchQrToken()
+    if (!qrModalOpen) return undefined
+    let active = true
+    let timer
+    const refresh = async () => {
+      try {
+        const { data } = await attendanceAPI.getTodayQRToken()
+        if (!active) return
+        setQrToken(data.token)
+        timer = setTimeout(refresh, Math.max(1000, (data.refreshIn || 30000) + 250))
+      } catch {
+        if (!active) return
+        toast.error(tr('QR කේතය ලබාගැනීමට නොහැකි විය'), { id: 'qr-load' })
+        timer = setTimeout(refresh, 5000)
+      }
+    }
+    refresh()
+    return () => {
+      active = false
+      clearTimeout(timer)
+      setQrToken('')
     }
   }, [qrModalOpen])
 
@@ -93,7 +117,7 @@ export default function Attendance() {
             
             toast.loading(tr('පැමිණීම සටහන් වෙමින්...'), { id: 'qr-scan' });
             try {
-              const { data } = await attendanceAPI.scanQRToken({ token: decodedText });
+              const { data } = await attendanceAPI.scanQRToken({ token: decodedText, ...(await readLocation()) });
               setScanSuccess({ message: data.message || tr('සාර්ථකව සටහන් විය!') });
               toast.success(data.message || tr('පැමිණීම සටහන් විය!'), { id: 'qr-scan' });
               load();
@@ -299,7 +323,7 @@ export default function Attendance() {
                 <QRCodeSVG value={qrToken} size={256} />
               </div>
               <p className="qr-help">
-                {tr('මෙම QR කේතය ගුරුවරුන්ට පෙන්වන්න. ඔවුන්ගේ දුරකථනයෙන් එය ස්කෑන් කර පැමිණීම සටහන් කළ හැක.')}
+                {tr('මෙම QR කේතය ගුරුවරුන්ට පෙන්වන්න. එය තත්පර 30කට වරක් ස්වයංක්‍රීයව වෙනස් වන බැවින් මෙම තිරය විවෘතව තබන්න.')}
               </p>
             </>
           ) : (

@@ -24,6 +24,8 @@ export default function Leave() {
   const [form, setForm]             = useState({ leaveType:'annual', startDate:'', endDate:'', reason:'' })
   const [reviewNote, setReviewNote] = useState('')
   const [saving, setSaving]         = useState(false)
+  const [balance, setBalance]       = useState(null)
+  const [reviewBalance, setReviewBalance] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -31,6 +33,7 @@ export default function Leave() {
       const params = filter !== 'all' ? { status: filter } : {}
       const { data } = await leaveAPI.getAll(params)
       setLeaves(data.leaves)
+      if (!isAdmin) leaveAPI.balance('me').then(r => setBalance(r.data.balance)).catch(() => {})
     } catch { toast.error(tr('නිවාඩු දත්ත ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
@@ -65,6 +68,14 @@ export default function Leave() {
     catch { toast.error(tr('අවලංගු කිරීමට නොහැකි විය')) }
   }
 
+  const openReview = (leave) => {
+    setReviewModal(leave)
+    setReviewNote('')
+    setReviewBalance(null)
+    if (leave.teacher?._id) leaveAPI.balance(leave.teacher._id).then(r => setReviewBalance(r.data.balance)).catch(() => {})
+  }
+
+  const limitedTypes = balance ? LEAVE_TYPES.filter(type => balance[type]?.limit > 0) : []
   const FILTERS = ['all','pending','approved','rejected','cancelled']
   if (loading) return <AppLayout title={tr('නිවාඩු')}><PageLoader /></AppLayout>
 
@@ -83,6 +94,19 @@ export default function Leave() {
           </div>
         )}
       </div>
+
+      {limitedTypes.length > 0 && (
+        <div className="balance-grid">
+          {limitedTypes.map(type => (
+            <div key={type} className="balance-card">
+              <span className="balance-label">{LEAVE_TYPE_LABELS[type]}</span>
+              <strong>{balance[type].remaining}</strong>
+              <span className="balance-of">{tr('දින {limit}න් ඉතිරි', { limit: balance[type].limit })}</span>
+              {balance[type].pending > 0 && <span className="balance-of">{tr('පොරොත්තු දින {days}', { days: balance[type].pending })}</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Filter pills */}
       <div className="filter-pills">
@@ -124,7 +148,7 @@ export default function Leave() {
                     <td>
                       <div style={{ display:'flex', gap:6 }}>
                         {isAdmin && l.status==='pending' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>{tr('පරීක්ෂා කරන්න')}</button>
+                          <button className="btn btn-sm btn-primary" onClick={() => openReview(l)}>{tr('පරීක්ෂා කරන්න')}</button>
                         )}
                         {!isAdmin && l.status==='pending' && (
                           <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>{tr('අවලංගු කරන්න')}</button>
@@ -167,7 +191,7 @@ export default function Leave() {
                 {(isAdmin && l.status==='pending') || (!isAdmin && l.status==='pending') ? (
                   <div className="mobile-card-actions">
                     {isAdmin && l.status==='pending' && (
-                      <button className="btn btn-sm btn-primary" onClick={() => { setReviewModal(l); setReviewNote('') }}>{tr('පරීක්ෂා කරන්න')}</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => openReview(l)}>{tr('පරීක්ෂා කරන්න')}</button>
                     )}
                     {!isAdmin && l.status==='pending' && (
                       <button className="btn btn-sm btn-danger" onClick={() => handleCancel(l._id)}>{tr('අවලංගු කරන්න')}</button>
@@ -191,6 +215,9 @@ export default function Leave() {
           <select className="form-select" value={form.leaveType} onChange={e => setForm(f=>({...f,leaveType:e.target.value}))}>
             {LEAVE_TYPES.map(t => <option key={t} value={t}>{LEAVE_TYPE_LABELS[t]}</option>)}
           </select>
+          {balance?.[form.leaveType]?.limit > 0 && (
+            <p className="field-hint">{tr('ඉතිරි දින {days}', { days: balance[form.leaveType].remaining })}</p>
+          )}
         </div>
         <div className="form-row">
           <div className="form-group">
@@ -202,6 +229,7 @@ export default function Leave() {
             <input className="form-input" type="date" value={form.endDate} onChange={e => setForm(f=>({...f,endDate:e.target.value}))} />
           </div>
         </div>
+        <p className="field-hint" style={{ marginTop: -6, marginBottom: 14 }}>{tr('සෙනසුරාදා, ඉරිදා සහ දින දර්ශනයේ නිවාඩු දින ගණන් නොකෙරේ.')}</p>
         <div className="form-group">
           <label className="form-label">{tr('හේතුව *')}</label>
           <textarea className="form-textarea" placeholder={tr('හේතුව කෙටියෙන් සඳහන් කරන්න…')} value={form.reason} onChange={e => setForm(f=>({...f,reason:e.target.value}))} />
@@ -223,6 +251,9 @@ export default function Leave() {
               [tr('කාලය'),  `${fmt(reviewModal.startDate)} → ${fmt(reviewModal.endDate)}`],
               [tr('දින'),    reviewModal.totalDays],
               [tr('හේතුව'),  reviewModal.reason],
+              ...(reviewBalance?.[reviewModal.leaveType]?.limit > 0
+                ? [[tr('ඉතිරි දින'), reviewBalance[reviewModal.leaveType].remaining]]
+                : []),
             ].map(([k,v]) => (
               <div key={k} className="detail-row">
                 <span className="text-muted">{k}</span>

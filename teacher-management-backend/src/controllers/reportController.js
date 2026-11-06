@@ -23,7 +23,7 @@ const getDashboard = async (req, res, next) => {
     ] = await Promise.all([
       Teacher.countDocuments(),
       User.countDocuments({ role: 'teacher', isActive: true }),
-      Attendance.countDocuments({ date: today, status: 'present' }),
+      Attendance.countDocuments({ date: today, status: { $in: ['present', 'late'] } }),
       Attendance.countDocuments({ date: today, status: 'absent' }),
       Leave.countDocuments({ status: 'pending' }),
       Salary.aggregate([

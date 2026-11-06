@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
-  Clock, Bell, Camera, BarChart2, Menu, LogOut,
+  Clock, Bell, Camera, BarChart2, Menu, LogOut, UserCheck, CalendarDays, Settings, UserRound,
 } from 'lucide-react';
 import { ROLE_LABELS } from '../../utils/locale';
 import LanguageSwitch from './LanguageSwitch';
@@ -16,9 +16,13 @@ const adminTabs = [
   { label: tr('නිවාඩු'),      to: '/leave',      icon: CalendarOff },
 ];
 const adminMore = [
-  { label: tr('කාලසටහන'),     to: '/timetable',     icon: Clock },
-  { label: tr('වාර්තා'),       to: '/reports',       icon: BarChart2 },
+  { label: tr('කාලසටහන'), to: '/timetable', icon: Clock },
+  { label: tr('ආදේශක'), to: '/relief', icon: UserCheck },
+  { label: tr('වාර්තා'), to: '/reports', icon: BarChart2 },
+  { label: tr('දින දර්ශනය'), to: '/calendar', icon: CalendarDays },
   { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
+  { label: tr('මගේ පැතිකඩ'), to: '/profile', icon: UserRound },
+  { label: tr('සැකසුම්'), to: '/settings', icon: Settings },
 ];
 
 const teacherTabs = [
@@ -28,8 +32,10 @@ const teacherTabs = [
   { label: tr('කාලසටහන'),  to: '/timetable',  icon: Clock },
 ];
 const teacherMore = [
-  { label: tr('මගේ නිවාඩු'),      to: '/leave',         icon: CalendarOff },
+  { label: tr('මගේ නිවාඩු'), to: '/leave', icon: CalendarOff },
+  { label: tr('දින දර්ශනය'), to: '/calendar', icon: CalendarDays },
   { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
+  { label: tr('මගේ පැතිකඩ'), to: '/profile', icon: UserRound },
 ];
 
 export default function BottomNav({ unread = 0 }) {

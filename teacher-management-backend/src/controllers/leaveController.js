@@ -1,4 +1,6 @@
-const { dateLabel, dateLabelEn } = require('../utils/sinhala');
+const { dateLabel, dateLabelEn, pick } = require('../utils/sinhala');
+const { countLeaveDays } = require('../utils/leaveDays');
+const Settings = require('../models/Settings');
 const Leave = require('../models/Leave');
 const Teacher = require('../models/Teacher');
 const Notification = require('../models/Notification');
@@ -13,7 +15,35 @@ const applyLeave = async (req, res, next) => {
     if (!teacher) return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
 
     const { leaveType, startDate, endDate, reason } = req.body;
-    const leave = await Leave.create({ teacher: teacher._id, leaveType, startDate, endDate, reason });
+    if (new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({ success: false, message: 'අවසන් දිනය ආරම්භක දිනයට පෙර විය නොහැක.' });
+    }
+    const totalDays = await countLeaveDays(startDate, endDate);
+    if (totalDays === 0) {
+      return res.status(400).json({ success: false, message: 'තෝරාගත් දිනවල පාසල් දින නොමැත.' });
+    }
+
+    const { leaveLimits } = await Settings.current();
+    const limit = leaveLimits[leaveType] || 0;
+    if (limit > 0) {
+      const year = new Date(startDate).getUTCFullYear();
+      const taken = await Leave.find({
+        teacher: teacher._id,
+        leaveType,
+        status: { $in: ['approved', 'pending'] },
+        startDate: { $gte: new Date(Date.UTC(year, 0, 1)), $lte: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) },
+      }).select('totalDays');
+      const used = taken.reduce((sum, l) => sum + (l.totalDays || 0), 0);
+      if (used + totalDays > limit) {
+        const left = Math.max(0, limit - used);
+        return res.status(400).json({
+          success: false,
+          message: pick(req, `මෙම වර්ගයේ නිවාඩු ඉතිරිව ඇත්තේ දින ${left}ක් පමණි. ඔබ ඉල්ලා ඇත්තේ දින ${totalDays}කි.`, `Only ${left} day(s) of this leave remain, and you asked for ${totalDays}.`),
+        });
+      }
+    }
+
+    const leave = await Leave.create({ teacher: teacher._id, leaveType, startDate, endDate, reason, totalDays });
 
     // Notify all admins
     const admins = await User.find({ role: 'admin', isActive: true });
@@ -138,24 +168,33 @@ const cancelLeave = async (req, res, next) => {
 // @access  Admin | Teacher
 const getLeaveBalance = async (req, res, next) => {
   try {
-    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const year = parseInt(req.query.year, 10) || new Date().getUTCFullYear();
+
+    // Teachers may only see their own balance.
+    let teacherId = req.params.teacherId;
+    if (req.user.role !== 'admin') {
+      const own = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!own) return res.status(404).json({ success: false, message: 'ගුරු පැතිකඩ හමු නොවීය.' });
+      if (teacherId !== 'me' && teacherId !== String(own._id)) {
+        return res.status(403).json({ success: false, message: 'මෙම ක්‍රියාව සඳහා ඔබට අවසර නැත.' });
+      }
+      teacherId = own._id;
+    }
 
     const leaves = await Leave.find({
-      teacher: req.params.teacherId,
-      status: 'approved',
-      startDate: { $gte: new Date(year, 0, 1) },
-      endDate: { $lte: new Date(year, 11, 31) },
+      teacher: teacherId,
+      status: { $in: ['approved', 'pending'] },
+      startDate: { $gte: new Date(Date.UTC(year, 0, 1)), $lte: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) },
     });
 
-    const used = {};
-    leaves.forEach((l) => {
-      used[l.leaveType] = (used[l.leaveType] || 0) + l.totalDays;
-    });
-
-    const entitlement = { annual: 14, sick: 10, casual: 7, maternity: 84, paternity: 5 };
+    const { leaveLimits } = await Settings.current();
     const balance = {};
-    for (const type in entitlement) {
-      balance[type] = { entitled: entitlement[type], used: used[type] || 0, remaining: entitlement[type] - (used[type] || 0) };
+    for (const type of ['annual', 'casual', 'sick', 'maternity', 'paternity', 'unpaid', 'other']) {
+      const ofType = leaves.filter((l) => l.leaveType === type);
+      const used = ofType.filter((l) => l.status === 'approved').reduce((sum, l) => sum + (l.totalDays || 0), 0);
+      const pending = ofType.filter((l) => l.status === 'pending').reduce((sum, l) => sum + (l.totalDays || 0), 0);
+      const limit = leaveLimits[type] || 0;
+      balance[type] = { limit, used, pending, remaining: limit > 0 ? Math.max(0, limit - used - pending) : null };
     }
 
     res.status(200).json({ success: true, year, balance });

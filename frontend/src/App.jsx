@@ -11,6 +11,10 @@ import Leave        from './pages/Leave'
 import Timetable    from './pages/Timetable'
 import Reports      from './pages/admin/Reports'
 import Notifications from './pages/Notifications'
+import Calendar     from './pages/Calendar'
+import Profile      from './pages/Profile'
+import Relief       from './pages/admin/Relief'
+import Settings     from './pages/admin/Settings'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth()
@@ -35,6 +39,10 @@ export default function App() {
       <Route path="/timetable" element={<ProtectedRoute><Timetable /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/relief" element={<ProtectedRoute adminOnly><Relief /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute adminOnly><Settings /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
     </Routes>

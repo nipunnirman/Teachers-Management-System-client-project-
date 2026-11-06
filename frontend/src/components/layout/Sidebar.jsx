@@ -5,25 +5,31 @@ import { APP_NAME, ROLE_LABELS } from '../../utils/locale';
 import LanguageSwitch from './LanguageSwitch';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarOff,
-  Clock, BarChart2, Bell, LogOut
+  Clock, BarChart2, Bell, LogOut, UserCheck, CalendarDays, Settings, UserRound
 } from 'lucide-react';
 
 const adminNav = [
-  { label: tr('මුල් පිටුව'),     to: '/dashboard',     icon: LayoutDashboard },
-  { label: tr('ගුරුවරු'),      to: '/teachers',      icon: Users },
-  { label: tr('පැමිණීම'),    to: '/attendance',    icon: CalendarCheck },
-  { label: tr('නිවාඩු'),         to: '/leave',         icon: CalendarOff },
-  { label: tr('කාලසටහන'),     to: '/timetable',     icon: Clock },
-  { label: tr('වාර්තා'),       to: '/reports',       icon: BarChart2 },
+  { label: tr('මුල් පිටුව'), to: '/dashboard', icon: LayoutDashboard },
+  { label: tr('ගුරුවරු'), to: '/teachers', icon: Users },
+  { label: tr('පැමිණීම'), to: '/attendance', icon: CalendarCheck },
+  { label: tr('නිවාඩු'), to: '/leave', icon: CalendarOff },
+  { label: tr('කාලසටහන'), to: '/timetable', icon: Clock },
+  { label: tr('ආදේශක'), to: '/relief', icon: UserCheck },
+  { label: tr('වාර්තා'), to: '/reports', icon: BarChart2 },
+  { label: tr('දින දර්ශනය'), to: '/calendar', icon: CalendarDays },
   { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
+  { label: tr('මගේ පැතිකඩ'), to: '/profile', icon: UserRound },
+  { label: tr('සැකසුම්'), to: '/settings', icon: Settings },
 ];
 
 const teacherNav = [
-  { label: tr('මුල් පිටුව'),     to: '/dashboard',     icon: LayoutDashboard },
-  { label: tr('මගේ පැමිණීම'), to: '/attendance',    icon: CalendarCheck },
-  { label: tr('මගේ නිවාඩු'),      to: '/leave',         icon: CalendarOff },
-  { label: tr('මගේ කාලසටහන'),  to: '/timetable',     icon: Clock },
+  { label: tr('මුල් පිටුව'), to: '/dashboard', icon: LayoutDashboard },
+  { label: tr('මගේ පැමිණීම'), to: '/attendance', icon: CalendarCheck },
+  { label: tr('මගේ නිවාඩු'), to: '/leave', icon: CalendarOff },
+  { label: tr('මගේ කාලසටහන'), to: '/timetable', icon: Clock },
+  { label: tr('දින දර්ශනය'), to: '/calendar', icon: CalendarDays },
   { label: tr('දැනුම්දීම්'), to: '/notifications', icon: Bell },
+  { label: tr('මගේ පැතිකඩ'), to: '/profile', icon: UserRound },
 ];
 
 export default function Sidebar({ unread = 0 }) {

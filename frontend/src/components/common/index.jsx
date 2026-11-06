@@ -28,6 +28,13 @@ export function Modal({ open, onClose, title, children, footer }) {
   );
 }
 
+export function Avatar({ name, photo, size = 36 }) {
+  const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+  const box = { width: size, height: size, minWidth: size };
+  if (photo) return <img className="user-avatar" style={box} src={photo} alt="" />;
+  return <div className="user-avatar" style={{ ...box, fontSize: Math.max(12, size * 0.34) }}>{initials}</div>;
+}
+
 export function Spinner({ size = 20 }) {
   return <div className="spinner" style={{ width: size, height: size }} />;
 }
