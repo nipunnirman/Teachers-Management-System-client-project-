@@ -4,6 +4,7 @@ import AppLayout from '../../components/layout/AppLayout'
 import { Avatar, Modal, PageLoader, EmptyState, Badge } from '../../components/common'
 import TeacherRecord, { teacherDetails } from '../../components/common/TeacherRecord'
 import { resizePhoto } from '../../utils/photo'
+import { useDataRefresh } from '../../utils/useDataRefresh'
 import { teacherAPI, authAPI } from '../../api'
 import toast from 'react-hot-toast'
 import { Camera, KeyRound, Plus, Printer, Search, Edit2, Trash2, Eye, X } from 'lucide-react'
@@ -17,6 +18,7 @@ const blankForm = {
 }
 
 export default function Teachers() {
+  const { version } = useDataRefresh()
   const [teachers, setTeachers]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
@@ -34,7 +36,7 @@ export default function Teachers() {
     } catch { toast.error(tr('ගුරු දත්ත ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [version])
 
   const filtered = teachers.filter(t =>
     t.user?.name?.toLowerCase().includes(search.toLowerCase()) ||

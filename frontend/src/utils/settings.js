@@ -1,11 +1,13 @@
 import { settingsAPI } from '../api';
+import { onDataChanged } from './apiCache';
 
 let cached = null;
 
 // School settings, fetched once and shared across pages.
 export function loadSettings(force = false) {
   if (!cached || force) {
-    cached = settingsAPI.get()
+    // Editing settings needs the latest values; other pages can use saved ones.
+    cached = settingsAPI.get(force ? { cacheMode: 'network' } : undefined)
       .then((res) => res.data.settings)
       .catch((error) => {
         cached = null;
@@ -18,6 +20,8 @@ export function loadSettings(force = false) {
 export function clearSettings() {
   cached = null;
 }
+
+onDataChanged(clearSettings);
 
 // YYYY-MM-DD for the device's current day.
 export function dateKey(date = new Date()) {

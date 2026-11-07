@@ -8,12 +8,14 @@ import { useAuth } from '../context/AuthContext'
 import { tr } from '../utils/i18n'
 import { EVENT_TYPE_LABELS, MONTHS_FULL, formatDate } from '../utils/locale'
 import { dateKey } from '../utils/settings'
+import { useDataRefresh } from '../utils/useDataRefresh'
 
 const TYPES = ['holiday', 'term', 'meeting', 'event']
 const TONE = { holiday: 'badge-red', term: 'badge-blue', meeting: 'badge-amber', event: 'badge-gray' }
 
 export default function Calendar() {
   const { isAdmin } = useAuth()
+  const { version, isRefresh } = useDataRefresh()
   const today = new Date()
   const [view, setView] = useState({ year: today.getFullYear(), month: today.getMonth() + 1 })
   const [events, setEvents] = useState([])
@@ -25,14 +27,14 @@ export default function Calendar() {
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    setLoading(true)
+    if (!isRefresh()) setLoading(true)
     try {
       const { data } = await calendarAPI.getAll(view)
       setEvents(data.events)
     } catch { toast.error(tr('දින දර්ශනය ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [view])
+  useEffect(() => { load() }, [view, version])
 
   const moveMonth = (change) => setView(({ year, month }) => {
     const next = new Date(year, month - 1 + change, 1)

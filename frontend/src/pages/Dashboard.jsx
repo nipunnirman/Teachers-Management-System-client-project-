@@ -5,6 +5,7 @@ import AppLayout from '../components/layout/AppLayout'
 import { StatCard, PageLoader } from '../components/common'
 import { reportAPI, attendanceAPI, calendarAPI, leaveAPI, reliefAPI, timetableAPI } from '../api'
 import { dateKey, eventCoversDate, loadSettings } from '../utils/settings'
+import { useDataRefresh } from '../utils/useDataRefresh'
 import { Users, CalendarCheck, CalendarOff, Clock, Calendar, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { MONTHS_SHORT, formatDayDate, formatFullDate, formatTime, periodLabel } from '../utils/locale'
@@ -115,6 +116,7 @@ function TodaySchedule({ classes }) {
 
 export default function Dashboard() {
   const { isAdmin, user } = useAuth()
+  const { version } = useDataRefresh()
   const [data, setData] = useState(null)
   const [teacherData, setTeacherData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -164,7 +166,7 @@ export default function Dashboard() {
         })
         .finally(() => setLoading(false))
     }
-  }, [isAdmin])
+  }, [isAdmin, version])
 
   if (loading) return <AppLayout title={tr('මුල් පිටුව')}><PageLoader /></AppLayout>
 

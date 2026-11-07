@@ -112,7 +112,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (isAdmin) return
-    teacherAPI.getMe()
+    teacherAPI.getMe({ cacheMode: 'network' })
       .then(({ data }) => fillForm(data.teacher))
       .catch(() => toast.error(tr('පැතිකඩ ලබාගැනීමට නොහැකි විය')))
       .finally(() => setLoading(false))

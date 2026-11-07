@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teachers-management-system-v4';
+const CACHE_NAME = 'teachers-management-system-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -51,14 +51,50 @@ self.addEventListener('notificationclick', (e) => {
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  // Pages come from the network first, so a new deploy reaches installed apps.
-  // The cached page is only the offline fallback.
-  if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));
-    return;
+const NETWORK_WAIT = 3000;
+
+async function openApp(e) {
+  const network = fetch(e.request).then((response) => {
+    if (response.ok) {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+    }
+    return response;
+  });
+  e.waitUntil(network.catch(() => {}));
+
+  // Use the latest page if it arrives quickly, otherwise open the saved one.
+  // The newer page is saved for next time either way.
+  const fallback = new Promise((resolve) => setTimeout(resolve, NETWORK_WAIT))
+    .then(async () => (await caches.match('/index.html')) || network);
+  try {
+    return await Promise.race([network, fallback]);
+  } catch {
+    return (await caches.match('/index.html')) || Response.error();
   }
-  e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
-  );
+}
+
+// Built files have unique names, so a saved copy is always correct.
+async function openAsset(request) {
+  const saved = await caches.match(request);
+  if (saved) return saved;
+  const response = await fetch(request);
+  if (response.ok) {
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
+
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  if (e.request.mode === 'navigate') {
+    e.respondWith(openApp(e));
+  } else if (url.pathname.startsWith('/assets/')) {
+    e.respondWith(openAsset(e.request));
+  } else {
+    e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
+  }
 });

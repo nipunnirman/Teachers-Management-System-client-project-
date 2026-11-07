@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { getLanguage } from './utils/i18n'
 import { APP_NAME } from './utils/locale'
 import App from './App'
+import ConnectionStatus from './components/common/ConnectionStatus'
 import './index.css'
 
 document.documentElement.lang = getLanguage()
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <App />
+        <ConnectionStatus />
         <Toaster
           position="top-center"
           containerStyle={{ top: 'calc(12px + env(safe-area-inset-top, 0px))' }}

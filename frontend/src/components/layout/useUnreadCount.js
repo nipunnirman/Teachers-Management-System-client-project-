@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { notifAPI } from '../../api';
+import { useDataRefresh } from '../../utils/useDataRefresh';
 
 const EVENT = 'notifications:unread';
 
@@ -10,6 +11,7 @@ export function publishUnreadCount(count) {
 
 export function useUnreadCount() {
   const [count, setCount] = useState(0);
+  const { version } = useDataRefresh();
 
   useEffect(() => {
     let active = true;
@@ -23,7 +25,7 @@ export function useUnreadCount() {
       active = false;
       window.removeEventListener(EVENT, onChange);
     };
-  }, []);
+  }, [version]);
 
   return count;
 }

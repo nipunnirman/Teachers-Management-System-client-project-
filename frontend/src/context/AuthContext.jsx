@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api';
 import { forgetPushOnDevice } from '../utils/push';
 import { clearSettings } from '../utils/settings';
+import { clearApiCache } from '../utils/apiCache';
 
 const AuthContext = createContext(null);
 
@@ -9,7 +10,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
   });
-  const [loading, setLoading] = useState(true);
+  // Someone already signed in goes straight to the app. Their login is checked in the background.
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem('token')) && !localStorage.getItem('user'));
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -30,6 +32,8 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });
+    clearApiCache();
+    clearSettings();
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
@@ -40,6 +44,7 @@ export function AuthProvider({ children }) {
     // This phone should stop receiving this person's notifications.
     forgetPushOnDevice();
     clearSettings();
+    clearApiCache();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

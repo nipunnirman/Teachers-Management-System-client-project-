@@ -8,7 +8,7 @@ import { APP_NAME, LEAVE_TYPE_LABELS, MONTHS_FULL, STATUS_LABELS, formatDate, fo
 import { dateKey } from '../../utils/settings';
 
 async function buildAttendance(year, month) {
-  const { data } = await attendanceAPI.getAll({ month, year });
+  const { data } = await attendanceAPI.getAll({ month, year }, { cacheMode: 'network' });
   const byTeacher = new Map();
   for (const r of data.records) {
     const name = r.teacher?.user?.name || '—';
@@ -39,7 +39,7 @@ async function buildAttendance(year, month) {
 }
 
 async function buildLeave(year, month) {
-  const { data } = await leaveAPI.getAll();
+  const { data } = await leaveAPI.getAll(undefined, { cacheMode: 'network' });
   const from = `${year}-${String(month).padStart(2, '0')}-01`;
   const to = `${year}-${String(month).padStart(2, '0')}-31`;
   const leaves = data.leaves

@@ -1,8 +1,18 @@
 import axios from 'axios';
 import { getLanguage } from '../utils/i18n';
+import { cachedAdapter, clearApiCache, markDataChanged } from '../utils/apiCache';
 
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({ baseURL });
+
+function endSession() {
+  clearApiCache();
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = '/login';
+}
+
+api.defaults.adapter = cachedAdapter(axios.getAdapter(axios.defaults.adapter), endSession);
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -12,13 +22,15 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Anything saved may now be out of date, so the next read goes to the server first.
+    if (res.config.method !== 'get' && !res.config.url?.includes('/auth/login')) markDataChanged();
+    return res;
+  },
   (err) => {
     // A wrong password also returns 401; stay on the page so its error can show.
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      endSession();
     }
     return Promise.reject(err);
   }
@@ -40,7 +52,7 @@ export const authAPI = {
 export const teacherAPI = {
   getAll:   (params) => api.get('/teachers', { params }),
   getOne:   (id)     => api.get(`/teachers/${id}`),
-  getMe:    ()       => api.get('/teachers/me'),
+  getMe:    (options) => api.get('/teachers/me', options),
   update:   (id, d)  => api.put(`/teachers/${id}`, d),
   remove:   (id)     => api.delete(`/teachers/${id}`),
 };
@@ -48,7 +60,7 @@ export const teacherAPI = {
 // ── Attendance ────────────────────────────────────
 export const attendanceAPI = {
   mark:       (data)      => api.post('/attendance', data),
-  getAll:     (params)    => api.get('/attendance', { params }),
+  getAll:     (params, options) => api.get('/attendance', { params, ...options }),
   getMe:      (params)    => api.get('/attendance/me', { params }),
   edit:       (id, data)  => api.put(`/attendance/${id}`, data),
   monthReport:(id, params)=> api.get(`/attendance/report/${id}`, { params }),
@@ -59,7 +71,7 @@ export const attendanceAPI = {
 // ── Leave ─────────────────────────────────────────
 export const leaveAPI = {
   apply:   (data)        => api.post('/leaves', data),
-  getAll:  (params)      => api.get('/leaves', { params }),
+  getAll:  (params, options) => api.get('/leaves', { params, ...options }),
   review:  (id, data)    => api.put(`/leaves/${id}/review`, data),
   cancel:  (id)          => api.put(`/leaves/${id}/cancel`),
   balance: (id, params)  => api.get(`/leaves/balance/${id}`, { params }),
@@ -95,7 +107,7 @@ export const notifAPI = {
 
 // ── Settings, calendar, relief, push ──────────────
 export const settingsAPI = {
-  get:    ()     => api.get('/settings'),
+  get:    (options) => api.get('/settings', options),
   update: (data) => api.put('/settings', data),
 };
 

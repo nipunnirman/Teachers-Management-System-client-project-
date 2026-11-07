@@ -6,6 +6,7 @@ import { leaveAPI, teacherAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Plus, CheckCircle, XCircle } from 'lucide-react'
+import { useDataRefresh } from '../utils/useDataRefresh'
 import { LEAVE_TYPE_LABELS, STATUS_LABELS, formatDate } from '../utils/locale'
 
 const LEAVE_TYPES = ['annual','sick','casual','maternity','paternity','unpaid','other']
@@ -16,6 +17,7 @@ function fmt(d) {
 
 export default function Leave() {
   const { isAdmin } = useAuth()
+  const { version, isRefresh } = useDataRefresh()
   const [leaves, setLeaves]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState('all')
@@ -28,7 +30,7 @@ export default function Leave() {
   const [reviewBalance, setReviewBalance] = useState(null)
 
   const load = async () => {
-    setLoading(true)
+    if (!isRefresh()) setLoading(true)
     try {
       const params = filter !== 'all' ? { status: filter } : {}
       const { data } = await leaveAPI.getAll(params)
@@ -37,7 +39,7 @@ export default function Leave() {
     } catch { toast.error(tr('නිවාඩු දත්ත ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [filter])
+  useEffect(() => { load() }, [filter, version])
 
   const handleApply = async () => {
     if (!form.startDate || !form.endDate || !form.reason) return toast.error(tr('අවශ්‍ය සියලු තොරතුරු ඇතුළත් කරන්න'))

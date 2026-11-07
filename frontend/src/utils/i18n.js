@@ -383,6 +383,11 @@ const ENGLISH = {
   'උපාධිය, ඩිප්ලෝමාව': "Degree, diploma",
   'මෙම ගුරුවරයාගේ මුරපදය යළි සකසන්න': "Reset this teacher's password",
   'යළි සකසන්න': "Reset",
+
+  // Connection messages
+  'සම්බන්ධතාවක් නැත. සුරැකි තොරතුරු පෙන්වයි.': 'No connection. Showing saved information.',
+  'සේවාදායකය අවදි වෙමින් පවතී. මිනිත්තුවක් පමණ ගත විය හැක.': 'The server is waking up. This can take about a minute.',
+  'සුරැකි තොරතුරු පෙන්වයි. යාවත්කාලීන වෙමින්…': 'Showing saved information. Updating…',
 };
 
 const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (match, name) => (vars && vars[name] !== undefined ? vars[name] : match));

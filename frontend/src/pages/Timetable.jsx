@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { DAY_LABELS, DAY_LABELS_SHORT, periodLabel } from '../utils/locale'
 import { loadSettings } from '../utils/settings'
+import { useDataRefresh } from '../utils/useDataRefresh'
 
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const PERIODS = [1,2,3,4,5,6,7,8]
@@ -19,6 +20,7 @@ const todayOrMonday = () => {
 
 export default function Timetable() {
   const { isAdmin } = useAuth()
+  const { version, isRefresh } = useDataRefresh()
   const [entries, setEntries]               = useState([])
   const [weekly, setWeekly]                 = useState({})
   const [teachers, setTeachers]             = useState([])
@@ -31,7 +33,7 @@ export default function Timetable() {
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    setLoading(true)
+    if (!isRefresh()) setLoading(true)
     try {
       let fetched = []
       if (isAdmin) {
@@ -60,7 +62,7 @@ export default function Timetable() {
   useEffect(() => {
     loadSettings().then(s => setAcademicYear(s.academicYear)).catch(() => toast.error(tr('කාලසටහන ලබාගැනීමට නොහැකි විය')))
   }, [])
-  useEffect(() => { if (academicYear) load() }, [academicYear, isAdmin, selectedTeacherId])
+  useEffect(() => { if (academicYear) load() }, [academicYear, isAdmin, selectedTeacherId, version])
   useEffect(() => { if (isAdmin) teacherAPI.getAll().then(r => setTeachers(r.data.teachers)).catch(()=>{}) }, [isAdmin])
 
   const handleCreate = async () => {

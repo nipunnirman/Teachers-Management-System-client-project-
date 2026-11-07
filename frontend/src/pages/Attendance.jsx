@@ -10,6 +10,7 @@ import { Plus, CalendarCheck, CalendarOff, Clock, TrendingDown, QrCode, Camera, 
 import { QRCodeSVG } from 'qrcode.react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { loadSettings } from '../utils/settings'
+import { useDataRefresh } from '../utils/useDataRefresh'
 import { MONTHS_FULL, STATUS_LABELS, formatShortDayDate, formatTime } from '../utils/locale'
 
 const MONTHS = MONTHS_FULL
@@ -38,6 +39,7 @@ async function readLocation() {
 
 export default function Attendance() {
   const { isAdmin } = useAuth()
+  const { version, isRefresh } = useDataRefresh()
   const [searchParams, setSearchParams] = useSearchParams()
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -146,7 +148,7 @@ export default function Attendance() {
 
 
   const load = async () => {
-    setLoading(true)
+    if (!isRefresh()) setLoading(true)
     try {
       if (isAdmin) {
         const { data } = await attendanceAPI.getAll({ month, year })
@@ -160,7 +162,7 @@ export default function Attendance() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [month, isAdmin])
+  useEffect(() => { load() }, [month, isAdmin, version])
   useEffect(() => {
     if (isAdmin) teacherAPI.getAll().then(r => setTeachers(r.data.teachers)).catch(()=>{})
   }, [isAdmin])

@@ -8,6 +8,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveCo
 import { Users, Wallet, CalendarOff, TrendingUp } from 'lucide-react'
 import { LEAVE_TYPE_LABELS, MONTHS_SHORT, STATUS_LABELS } from '../../utils/locale'
 import { loadSettings } from '../../utils/settings'
+import { useDataRefresh } from '../../utils/useDataRefresh'
 import ReportExport from '../../components/common/ReportExport'
 
 const MONTHS = MONTHS_SHORT
@@ -28,6 +29,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function Reports() {
+  const { version } = useDataRefresh()
   const year = new Date().getFullYear()
   const [dash, setDash]         = useState(null)
   const [attData, setAttData]   = useState([])
@@ -68,7 +70,7 @@ export default function Reports() {
       setWorkload(wl.data.workload.slice(0,10))
     }).catch(() => toast.error(tr('වාර්තා ලබාගැනීමට නොහැකි විය')))
     .finally(() => setLoading(false))
-  }, [])
+  }, [version])
 
   if (loading) return <AppLayout title={tr('වාර්තා')}><PageLoader /></AppLayout>
 

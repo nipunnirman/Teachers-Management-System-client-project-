@@ -5,6 +5,7 @@ import { PageLoader, EmptyState, Modal } from '../components/common'
 import { notifAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { publishUnreadCount } from '../components/layout/useUnreadCount'
+import { useDataRefresh } from '../utils/useDataRefresh'
 import toast from 'react-hot-toast'
 import { Bell, CalendarCheck, CalendarOff, CheckCheck, Clock, Megaphone, Trash2, Wallet } from 'lucide-react'
 import { timeAgo } from '../utils/locale'
@@ -13,6 +14,7 @@ const TYPE_ICON = { attendance:CalendarCheck, leave:CalendarOff, salary:Wallet, 
 
 export default function Notifications() {
   const { isAdmin } = useAuth()
+  const { version, isRefresh } = useDataRefresh()
   const [notifs, setNotifs]               = useState([])
   const [loading, setLoading]             = useState(true)
   const [unread, setUnread]               = useState(0)
@@ -21,14 +23,14 @@ export default function Notifications() {
   const [sending, setSending]             = useState(false)
 
   const load = async () => {
-    setLoading(true)
+    if (!isRefresh()) setLoading(true)
     try {
       const { data } = await notifAPI.getAll()
       setNotifs(data.notifications); setUnread(data.unreadCount); publishUnreadCount(data.unreadCount)
     } catch { toast.error(tr('දැනුම්දීම් ලබාගැනීමට නොහැකි විය')) }
     finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [version])
 
   const markRead    = async (id) => { try { await notifAPI.markRead(id); load() } catch {} }
   const markAllRead = async ()   => { try { await notifAPI.markAllRead(); toast.success(tr('සියල්ල කියවූ ලෙස සලකුණු කරන ලදී')); load() } catch {} }

@@ -7,8 +7,10 @@ import { reliefAPI } from '../../api'
 import { tr } from '../../utils/i18n'
 import { periodLabel } from '../../utils/locale'
 import { dateKey } from '../../utils/settings'
+import { useDataRefresh } from '../../utils/useDataRefresh'
 
 export default function Relief() {
+  const { version } = useDataRefresh()
   const [date, setDate] = useState(dateKey())
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -25,6 +27,7 @@ export default function Relief() {
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [date])
+  useEffect(() => { if (version) load(false) }, [version])
 
   const assign = async (slot) => {
     const reliefTeacherId = choices[slot.entryId]
